@@ -1,0 +1,198 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MainColumns from '../../layouts/MainColumns.astro';
+import { generateTagTitle, generateTagDescription } from '../../config/seo';
+
+// В SSR используем CMS_URL (для Docker - http://cms:3000)
+const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
+// Для браузера нужен публичный URL (http://localhost:3000)
+const PUBLIC_CMS_URL = import.meta.env.PUBLIC_CMS_URL || 'http://localhost:3000';
+const PLACEHOLDER_IMAGE_URL = import.meta.env.PUBLIC_PLACEHOLDER_URL || 'http://localhost:3000/api/media/file/placeholder-1.jpg';
+const PAGE_LIMIT = 50;
+
+const { slug } = Astro.params;
+const url = Astro.url;
+const currentPage = Number(url.searchParams.get('page') || '1');
+
+// Динамически загружаем тег по slug из CMS
+let tag = null;
+let tagId = null;
+
+try {
+  const tagsResponse = await fetch(`${CMS_URL}/api/tags?where[slug][equals]=${slug}&limit=1`);
+  if (tagsResponse.ok) {
+    const tagsData = await tagsResponse.json();
+    const tags = tagsData.docs || [];
+    if (tags.length > 0) {
+      tag = tags[0];
+      tagId = tag.id;
+    }
+  }
+} catch (error) {
+  console.error('Error fetching tag:', error);
+}
+
+// Если тег не найден, возвращаем 404
+if (!tag || !tagId) {
+  return Astro.redirect('/404');
+}
+
+// Получаем статьи для этого тега
+let articles = [];
+let pagination: { page: number; totalPages: number; totalDocs: number } = {
+  page: currentPage,
+  totalPages: 1,
+  totalDocs: 0,
+};
+try {
+  const articlesResponse = await fetch(
+    `${CMS_URL}/api/articles?where[tags][equals]=${tagId}&where[status][equals]=published&sort=-publishedDate&page=${currentPage}&limit=${PAGE_LIMIT}`
+  );
+  
+  if (articlesResponse.ok) {
+    const articlesData = await articlesResponse.json();
+    pagination = {
+      page: typeof articlesData.page === 'number' ? articlesData.page : currentPage,
+      totalPages: typeof articlesData.totalPages === 'number' ? articlesData.totalPages : 1,
+      totalDocs: typeof articlesData.totalDocs === 'number' ? articlesData.totalDocs : (Array.isArray(articlesData.docs) ? articlesData.docs.length : 0),
+    };
+
+    articles = (articlesData.docs || []).map((article: any) => {
+      // Определяем URL изображения
+      let imageUrl = PLACEHOLDER_IMAGE_URL;
+      
+      if (article.feedImageUrl) {
+        imageUrl = article.feedImageUrl;
+      } else if (article.coverImage) {
+        if (typeof article.coverImage === 'object' && article.coverImage?.url) {
+          imageUrl = article.coverImage.url.startsWith('http') 
+            ? article.coverImage.url 
+            : `${CMS_URL}${article.coverImage.url}`;
+        } else if (typeof article.coverImage === 'number' || typeof article.coverImage === 'string') {
+          // Если это ID, получаем URL через API
+          imageUrl = `${CMS_URL}/api/media/${article.coverImage}`;
+        }
+      }
+      
+      // Получаем имя автора
+      let authorName = 'Редакция';
+      if (article.author) {
+        if (typeof article.author === 'object' && article.author?.name) {
+          authorName = article.author.name;
+        }
+      }
+      
+      // Получаем имя первой категории
+      let categoryName = '';
+      if (article.categories && Array.isArray(article.categories) && article.categories.length > 0) {
+        const firstCategory = article.categories[0];
+        if (typeof firstCategory === 'object' && firstCategory?.name) {
+          categoryName = firstCategory.name;
+        }
+      }
+      
+      // Формируем путь статьи
+      const articleSlug = article.slug || article.title?.toLowerCase().replace(/\s+/g, '-');
+      const publishedDate = article.publishedDate ? new Date(article.publishedDate) : new Date();
+      const year = publishedDate.getFullYear();
+      const month = String(publishedDate.getMonth() + 1).padStart(2, '0');
+      
+      return {
+        href: `/article/${year}/${month}/${articleSlug}`,
+        title: article.title,
+        excerpt: article.excerpt || '',
+        imageUrl,
+        imageAlt: article.title,
+        fallbackImageUrl: PLACEHOLDER_IMAGE_URL,
+        category: categoryName,
+        authorName,
+      };
+    });
+  }
+} catch (error) {
+  console.error('Error fetching articles:', error);
+}
+
+// Generate SEO meta tags
+const articleCount = articles.length;
+const metaTitle = tag.metaTitle || generateTagTitle(tag.name, articleCount);
+const metaDescription = tag.metaDescription || generateTagDescription(tag.name, articleCount);
+---
+
+<BaseLayout title={metaTitle} description={metaDescription}>
+  <MainColumns>
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="/" class="text-muted hover:text-accent">Главная</a>
+      <span class="mx-2">/</span>
+      <a href="/tags" class="text-muted hover:text-accent">Теги</a>
+      <span class="mx-2">/</span>
+      <span>{tag.name}</span>
+    </nav>
+
+    <h1 class="text-3xl font-bold text-foreground mb-8">{tag.name}</h1>
+
+    {articles.length > 0 ? (
+      <>
+        <section class="mb-8">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {articles.map((article: any) => (
+              <a href={article.href} class="flex gap-4 group">
+                <div class="flex-shrink-0 w-32 md:w-40 overflow-hidden rounded-image">
+                  <img
+                    src={article.imageUrl}
+                    alt={article.imageAlt}
+                    width={200}
+                    height={130}
+                    loading="lazy"
+                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    onerror={`this.onerror=null; this.src='${PLACEHOLDER_IMAGE_URL}';`}
+                  />
+                </div>
+                <div class="flex-1 border-b border-border pb-4">
+                  {article.category && (
+                    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
+                      {article.category}
+                    </p>
+                  )}
+                  <h3 class="text-sm md:text-base font-semibold text-foreground leading-snug line-clamp-2 group-hover:underline">
+                    {article.title}
+                  </h3>
+                  <p class="text-xs text-muted mt-2">
+                    {article.authorName}
+                  </p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        {pagination.totalPages > 1 && (
+          <nav class="mt-8 flex items-center justify-center gap-4 text-sm" aria-label="Пагинация">
+            {pagination.page > 1 && (
+              <a
+                href={pagination.page - 1 === 1 ? `/tags/${slug}` : `/tags/${slug}?page=${pagination.page - 1}`}
+                class="px-3 py-1 border border-border rounded-button hover:bg-accent hover:text-background transition-colors"
+              >
+                Назад
+              </a>
+            )}
+            <span class="text-muted">
+              Страница {pagination.page} из {pagination.totalPages}
+            </span>
+            {pagination.page < pagination.totalPages && (
+              <a
+                href={`/tags/${slug}?page=${pagination.page + 1}`}
+                class="px-3 py-1 border border-border rounded-button hover:bg-accent hover:text-background transition-colors"
+              >
+                Вперёд
+              </a>
+            )}
+          </nav>
+        )}
+      </>
+    ) : (
+      <p class="text-muted">Статьи с этим тегом не найдены</p>
+    )}
+  </MainColumns>
+</BaseLayout>

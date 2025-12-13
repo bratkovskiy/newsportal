@@ -1,0 +1,49 @@
+---
+export interface Props {
+  href: string;
+  title: string;
+  excerpt: string;
+  imageUrl: string;
+  imageAlt: string;
+  fallbackImageUrl: string;
+  category: string;
+  authorName: string;
+}
+
+const { href, title, excerpt, imageUrl, imageAlt, fallbackImageUrl, category, authorName } = Astro.props;
+---
+
+<a
+  href={href}
+  class="block bg-background rounded-card overflow-hidden shadow-sm hover:shadow-card transition-shadow duration-300"
+>
+  <div class="relative">
+    <img
+      src={imageUrl}
+      alt={imageAlt}
+      width={640}
+      height={426}
+      loading="lazy"
+      class="w-full h-auto object-cover aspect-[4/3]"
+      onerror={`this.onerror=null; this.src='${fallbackImageUrl}';`}
+    />
+  </div>
+  <div class="pt-4 pb-5 flex flex-col gap-2">
+    {category && (
+      <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent">
+        {category}
+      </p>
+    )}
+    <h3 class="text-base sm:text-lg font-bold text-foreground leading-snug">
+      {title}
+    </h3>
+    {excerpt && (
+      <p class="text-sm text-muted leading-relaxed line-clamp-3">
+        {excerpt}
+      </p>
+    )}
+    <p class="text-[11px] text-muted mt-1">
+      {authorName}
+    </p>
+  </div>
+</a>

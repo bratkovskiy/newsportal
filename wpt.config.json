@@ -1,0 +1,40 @@
+{
+  "runs": 3,
+  "batch": true,
+  "settings": {
+    "location": "Dulles_MotoG4",
+    "connectivity": "4G",
+    "fvonly": true
+  },
+  "tests": [
+    {
+      "name": "Home Page",
+      "url": "https://www.YOUR_SITE.com/",
+      "customMetrics": [
+        {
+          "name": "LCP",
+          "script": "return new Promise(resolve => new PerformanceObserver(list => list.getEntries().forEach(entry => entry.name === 'largest-contentful-paint' && resolve(entry.startTime))).observe({type: 'largest-contentful-paint', buffered: true}));"
+        },
+        {
+          "name": "CLS",
+          "script": "return new Promise(resolve => new PerformanceObserver(list => { let score = 0; list.getEntries().forEach(entry => { if (!entry.hadRecentInput) { score += entry.value; } }); resolve(score); }).observe({type: 'layout-shift', buffered: true}));"
+        }
+      ]
+    },
+    {
+      "name": "Category Page",
+      "url": "https://www.YOUR_SITE.com/category/example/"
+    },
+    {
+      "name": "Article Page",
+      "url": "https://www.YOUR_SITE.com/article/2025/12/example-slug/"
+    }
+  ],
+  "budgets": {
+    "visualComplete": 3000,
+    "custom": {
+      "LCP": 2500,
+      "CLS": 0.1
+    }
+  }
+}

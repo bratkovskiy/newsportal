@@ -1,0 +1,26 @@
+эпик:
+  id: E2
+  название: Payload CMS и схема данных
+задача:
+  id: BE-001
+  заголовок: 'Коллекции Payload: Articles/Authors/Categories/Tags/Feeds/Media/Likes'
+цель: 'Коллекции Payload: Articles/Authors/Categories/Tags/Feeds/Media/Likes для эпика
+  «Payload CMS и схема данных»'
+контекстные_файлы:
+- docs/tz_context.md
+- docs/requirements.md
+результаты:
+- apps/cms/src/payload.config.ts
+критерии_приёмки:
+- Роли Admin/Editor/Author/Viewer
+- Включены ревизии для Articles
+- Есть SEO‑поля
+ограничения:
+- Mobile-first; на контентных страницах отсутствует глобальный SPA
+- 'Клиентский JS только в островках при необходимости (hydrate: client:visible/idle)'
+- Рекламный компонент AdSlot провайдер-независим; скрипты грузятся лениво
+- 'SEO: schema.org + canonical на всех страницах'
+- 'Изображения: пресеты AVIF/WEBP; заданы width/height/aspect-ratio; нулевой CLS'
+владелец: ai/agent
+приоритет: высокий
+создано: '2025-12-05T12:59:04.844111Z'

@@ -1,0 +1,24 @@
+эпик:
+  id: E6
+  название: SEO и карты сайта
+задача:
+  id: SEO-001
+  заголовок: Компоненты schema.org и хелперы мета‑тегов
+цель: Компоненты schema.org и хелперы мета‑тегов для эпика «SEO и карты сайта»
+контекстные_файлы:
+- docs/tz_context.md
+- docs/requirements.md
+результаты:
+- apps/web/src/components/seo/*.astro
+критерии_приёмки:
+- Article/Breadcrumb/WebSite/SearchAction
+- Канонический URL на каждой странице
+ограничения:
+- Mobile-first; на контентных страницах отсутствует глобальный SPA
+- 'Клиентский JS только в островках при необходимости (hydrate: client:visible/idle)'
+- Рекламный компонент AdSlot провайдер-независим; скрипты грузятся лениво
+- 'SEO: schema.org + canonical на всех страницах'
+- 'Изображения: пресеты AVIF/WEBP; заданы width/height/aspect-ratio; нулевой CLS'
+владелец: ai/agent
+приоритет: высокий
+создано: '2025-12-05T12:59:04.861839Z'

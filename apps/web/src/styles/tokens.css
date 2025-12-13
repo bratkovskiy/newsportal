@@ -1,0 +1,60 @@
+@import './themes/soft.css'; /* Default theme */
+/* @import './themes/editorial.css'; */ /* Uncomment to switch to editorial theme */
+
+:root {
+  /* Typography */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+
+  /* Font Sizes (Minor Third scale: 1.2) */
+  --fs-base: 16px; /* Base size for mobile */
+  --fs-sm: 0.833rem;  /* 15px */
+  --fs-md: 1rem;      /* 18px */
+  --fs-lg: 1.2rem;    /* 21.6px */
+  --fs-xl: 1.44rem;   /* 25.9px */
+  --fs-2xl: 1.728rem; /* 31.1px */
+  --fs-3xl: 2.074rem; /* 37.3px */
+
+  /* Spacing (8pt grid) */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --fs-base: 16px; /* Adjust base size for desktop */
+  }
+}
+
+/* Mobile burger animation */
+.mobile-burger-icon {
+  transition: transform 0.2s ease;
+}
+
+.mobile-burger-line {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.mobile-burger.is-open .mobile-burger-icon {
+  transform: rotate(90deg);
+}
+
+.mobile-burger.is-open .mobile-burger-line:nth-child(1) {
+  transform: translateY(5px) rotate(45deg);
+}
+
+.mobile-burger.is-open .mobile-burger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-burger.is-open .mobile-burger-line:nth-child(3) {
+  transform: translateY(-5px) rotate(-45deg);
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}

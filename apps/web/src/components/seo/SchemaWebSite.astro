@@ -1,0 +1,20 @@
+---
+const siteUrl = import.meta.env.SITE;
+
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "url": siteUrl,
+  "name": "FashionSite",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": `${siteUrl}search?q={search_term_string}`
+    },
+    "query-input": "required name=search_term_string"
+  }
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(schema)} />

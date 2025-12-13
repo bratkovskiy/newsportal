@@ -1,0 +1,21 @@
+:root {
+  /* Theme: Lady-style (soft magazine) */
+
+  /* Colors */
+  --c-bg: #fafafa; /* Белый фон, как у ladу.mail.ru */
+  --c-fg: #18181b; /* Чуть мягче чёрного для основного текста */
+  --c-accent: #ff2e93; /* Ярко-розовый акцент под женский журнал */
+  --c-muted: #71717a; /* Более мягкий серый для второстепенного текста */
+  --c-border: #e4e4e7; /* Очень светлый бордер для карточек и шапки */
+  --c-success: #4caf50;
+  --c-danger: #f44336;
+
+  /* Radii */
+  --r-card: 0px; /* Sharp corners for editorial look */
+  --r-button: 4px; /* Slightly rounded */
+  --r-image: 0px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+}

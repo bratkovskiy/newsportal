@@ -1,0 +1,65 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MainColumns from '../layouts/MainColumns.astro';
+import { SITE_CONFIG } from '../config/seo';
+
+const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
+
+type SiteLanguage = 'ru' | 'en';
+
+type SiteSettings = {
+  currentLanguage?: SiteLanguage;
+};
+
+type CookiesPage = {
+  contentRu?: string;
+  contentEn?: string;
+};
+
+let siteLanguage: SiteLanguage = 'ru';
+
+try {
+  const res = await fetch(`${CMS_URL}/api/globals/site-settings`);
+  if (res.ok) {
+    const data = (await res.json()) as SiteSettings;
+    siteLanguage = data.currentLanguage === 'en' ? 'en' : 'ru';
+  }
+} catch (e) {
+  // оставляем язык по умолчанию (ru)
+}
+
+let cookiesContent = '';
+
+try {
+  const res = await fetch(`${CMS_URL}/api/globals/cookies-page`);
+  if (res.ok) {
+    const data = (await res.json()) as CookiesPage;
+    cookiesContent = siteLanguage === 'en' ? (data.contentEn || '') : (data.contentRu || '');
+  }
+} catch (e) {
+  cookiesContent = '';
+}
+
+const pageTitle = siteLanguage === 'en' ? 'Cookies Policy' : 'Политика использования файлов Cookie';
+const pageDescription = siteLanguage === 'en'
+  ? `Cookies Policy of ${SITE_CONFIG.brandName}.`
+  : `Политика использования файлов cookie на сайте ${SITE_CONFIG.brandName}.`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <MainColumns>
+    <article class="max-w-3xl mx-auto py-8 lg:py-10">
+      <h1 class="text-3xl md:text-4xl font-bold text-foreground mb-6">{pageTitle}</h1>
+
+      {cookiesContent ? (
+        <div class="prose article-prose max-w-none" set:html={cookiesContent} />
+      ) : (
+        <p class="text-sm text-muted">
+          {siteLanguage === 'en'
+            ? 'Cookies Policy has not been published yet.'
+            : 'Политика использования файлов Cookie пока не опубликована.'}
+        </p>
+      )}
+    </article>
+  </MainColumns>
+</BaseLayout>

@@ -1,0 +1,897 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CardA from '../components/CardA.astro';
+import CardFeed from '../components/CardFeed.astro';
+import MainColumns from '../layouts/MainColumns.astro';
+import { generateHomeTitle, generateHomeDescription } from '../config/seo';
+
+// В SSR используем CMS_URL (для Docker - http://cms:3000)
+const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
+const PAGE_LIMIT = 100;
+// Для браузера нужен публичный URL (http://localhost:3000)
+const PUBLIC_CMS_URL = import.meta.env.PUBLIC_CMS_URL || 'http://localhost:3000';
+const PLACEHOLDER_IMAGE_URL = import.meta.env.PUBLIC_PLACEHOLDER_URL || 'http://localhost:3000/api/media/file/placeholder-1.jpg';
+
+type PayloadArticle = {
+  id: string;
+  title?: string;
+  slug?: string;
+  excerpt?: string;
+  publishedDate?: string;
+  author?: any;
+  coverImage?: any;
+  categories?: any[];
+  tags?: any[];
+  feedImageUrl?: string;
+  viewCount?: number;
+  homeMainBlock?: boolean;
+  homeTop?: boolean;
+  homeMustRead?: boolean;
+};
+
+type ArticlesResponse = {
+  docs?: PayloadArticle[];
+};
+
+type TagItem = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type HomeCategory = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type HomeArticle = {
+  id: string;
+  href: string;
+  title: string;
+  excerpt: string;
+  imageUrl: string;
+  imageAlt: string;
+  fallbackImageUrl: string;
+  category: string;
+  authorName: string;
+  publishedDate?: string;
+  viewCount: number;
+  homeMainBlock?: boolean;
+  homeTop?: boolean;
+  homeMustRead?: boolean;
+  categories?: any[];
+};
+
+async function fetchArticles(): Promise<PayloadArticle[]> {
+  try {
+    const url = `${CMS_URL}/api/articles?where[status][equals]=published&depth=1&sort=-publishedDate&page=1&limit=${PAGE_LIMIT}`;
+    
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error('Failed to fetch articles:', res.status);
+      return [];
+    }
+
+    const data = (await res.json()) as ArticlesResponse;
+    return Array.isArray(data?.docs) ? data.docs : [];
+  } catch (e) {
+    console.error('Error fetching articles:', e);
+    return [];
+  }
+}
+
+async function fetchHomeCategories(): Promise<HomeCategory[]> {
+  try {
+    const url = `${CMS_URL}/api/categories?where[showOnHome][equals]=true&limit=20&sort=name`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error('Failed to fetch home categories:', res.status);
+      return [];
+    }
+
+    const data = await res.json();
+    const docs = Array.isArray(data?.docs) ? data.docs : [];
+    return docs.map((cat: any) => ({
+      id: String(cat.id),
+      name: cat.name ?? '',
+      slug: cat.slug ?? '',
+    }));
+  } catch (e) {
+    console.error('Error fetching home categories:', e);
+    return [];
+  }
+}
+
+async function fetchTags(): Promise<TagItem[]> {
+  try {
+    const url = `${CMS_URL}/api/tags?limit=50&sort=name`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error('Failed to fetch tags:', res.status);
+      return [];
+    }
+
+    const data = await res.json();
+    const docs = Array.isArray(data?.docs) ? data.docs : [];
+    return docs.map((tag: any) => ({
+      id: String(tag.id),
+      name: tag.name ?? '',
+      slug: tag.slug ?? '',
+    }));
+  } catch (e) {
+    console.error('Error fetching tags:', e);
+    return [];
+  }
+}
+
+function buildArticlePath(article: PayloadArticle): string {
+  const slug = article.slug ?? '';
+  const id = article.id ? String(article.id) : '';
+
+  // Новый формат: /article/slug-id.html
+  if (slug && id) return `/article/${slug}-${id}.html`;
+
+  // Фолбек на случай отсутствия id или slug
+  if (slug) return `/article/${slug}`;
+  if (id) return `/article/${id}`;
+  return '/';
+}
+
+function getCoverImage(article: PayloadArticle): { url: string; alt: string } {
+  // В приоритете внешнее изображение из RSS (custom:image), сохранённое в feedImageUrl.
+  if (article.feedImageUrl) {
+    return { url: article.feedImageUrl, alt: article.title ?? '' };
+  }
+
+  const coverImage = article.coverImage && typeof article.coverImage === 'object' ? article.coverImage : null;
+  const url = coverImage?.url ?? PLACEHOLDER_IMAGE_URL;
+  const alt = coverImage?.alt ?? (article.title ?? '');
+  return { url, alt };
+}
+
+function getCategoryName(article: PayloadArticle): string {
+  if (!Array.isArray(article.categories) || article.categories.length === 0) return '';
+  const first = article.categories[0];
+  if (first && typeof first === 'object') {
+    return first.name ?? '';
+  }
+  return '';
+}
+
+function getAuthorName(article: PayloadArticle): string {
+  if (article.author && typeof article.author === 'object') {
+    return article.author.name ?? 'Unknown';
+  }
+  return 'Unknown';
+}
+
+function getPrimaryTagName(article: PayloadArticle): string {
+  if (!Array.isArray(article.tags) || article.tags.length === 0) return '';
+  const first = article.tags[0];
+  if (first && typeof first === 'object') {
+    return first.name ?? '';
+  }
+  return '';
+}
+
+function getPublishedTimestamp(article: HomeArticle): number {
+  if (!article.publishedDate) return 0;
+  const time = Date.parse(article.publishedDate);
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function sortByDateThenViews(list: HomeArticle[]): HomeArticle[] {
+  return [...list].sort((a, b) => {
+    const dateDiff = getPublishedTimestamp(b) - getPublishedTimestamp(a);
+    if (dateDiff !== 0) return dateDiff;
+    const av = typeof a.viewCount === 'number' ? a.viewCount : 0;
+    const bv = typeof b.viewCount === 'number' ? b.viewCount : 0;
+    return bv - av;
+  });
+}
+
+function sortByViewsThenDate(list: HomeArticle[]): HomeArticle[] {
+  return [...list].sort((a, b) => {
+    const av = typeof a.viewCount === 'number' ? a.viewCount : 0;
+    const bv = typeof b.viewCount === 'number' ? b.viewCount : 0;
+    if (av !== bv) return bv - av;
+    return getPublishedTimestamp(b) - getPublishedTimestamp(a);
+  });
+}
+
+function articleHasCategory(article: HomeArticle, categoryId: string): boolean {
+  const list = Array.isArray(article.categories) ? article.categories : [];
+  return list.some((cat: any) => {
+    if (!cat) return false;
+    if (typeof cat === 'object') {
+      const id = (cat as any).id ?? cat;
+      return String(id) === categoryId;
+    }
+    return String(cat) === categoryId;
+  });
+}
+
+type CategoryBlock = {
+  category: HomeCategory;
+  articles: HomeArticle[];
+};
+
+function selectHomeLayout(all: HomeArticle[], homeCategories: HomeCategory[]): {
+  mainArticle?: HomeArticle;
+  topArticles: HomeArticle[];
+  mustReadArticles: HomeArticle[];
+  popularArticles: HomeArticle[];
+  categoryBlocks: CategoryBlock[];
+} {
+  const usedIds = new Set<string>();
+
+  function selectMain(): HomeArticle | undefined {
+    if (all.length === 0) return undefined;
+
+    const flagged = sortByDateThenViews(all.filter((a) => a.homeMainBlock));
+    const chosen = flagged.length > 0 ? flagged[0] : sortByDateThenViews(all)[0];
+    if (chosen) {
+      usedIds.add(chosen.id);
+    }
+    return chosen;
+  }
+
+  function selectTopMany(limit: number): HomeArticle[] {
+    const result: HomeArticle[] = [];
+    if (all.length === 0 || limit <= 0) return result;
+
+    const allFlagged = sortByDateThenViews(all.filter((a) => a.homeTop));
+    const availableFlagged = allFlagged.filter((a) => !usedIds.has(a.id));
+
+    for (const article of availableFlagged) {
+      if (result.length >= limit) break;
+      result.push(article);
+      usedIds.add(article.id);
+    }
+
+    if (result.length < limit && allFlagged.length > 0) {
+      for (const article of allFlagged) {
+        if (result.some((r) => r.id === article.id)) continue;
+        result.push(article);
+        usedIds.add(article.id);
+        if (result.length >= limit) break;
+      }
+    }
+
+    if (result.length < limit) {
+      const sorted = sortByDateThenViews(all);
+      const candidates = sorted.filter(
+        (a) => !usedIds.has(a.id) && !result.some((r) => r.id === a.id),
+      );
+      for (const article of candidates) {
+        if (result.length >= limit) break;
+        result.push(article);
+        usedIds.add(article.id);
+      }
+
+      if (result.length < limit && sorted.length > 0) {
+        for (const article of sorted) {
+          if (result.some((r) => r.id === article.id)) continue;
+          result.push(article);
+          usedIds.add(article.id);
+          if (result.length >= limit) break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  function selectMustReadMany(limit: number): HomeArticle[] {
+    const result: HomeArticle[] = [];
+    if (all.length === 0 || limit <= 0) return result;
+
+    const allFlagged = sortByDateThenViews(all.filter((a) => a.homeMustRead));
+    const availableFlagged = allFlagged.filter((a) => !usedIds.has(a.id));
+
+    for (const article of availableFlagged) {
+      if (result.length >= limit) break;
+      result.push(article);
+      usedIds.add(article.id);
+    }
+
+    if (result.length < limit && allFlagged.length > 0) {
+      for (const article of allFlagged) {
+        if (result.some((r) => r.id === article.id)) continue;
+        result.push(article);
+        usedIds.add(article.id);
+        if (result.length >= limit) break;
+      }
+    }
+
+    if (result.length < limit) {
+      const sorted = sortByDateThenViews(all);
+      const candidates = sorted.filter(
+        (a) => !usedIds.has(a.id) && !result.some((r) => r.id === a.id),
+      );
+      for (const article of candidates) {
+        if (result.length >= limit) break;
+        result.push(article);
+        usedIds.add(article.id);
+      }
+
+      if (result.length < limit && sorted.length > 0) {
+        for (const article of sorted) {
+          if (result.some((r) => r.id === article.id)) continue;
+          result.push(article);
+          usedIds.add(article.id);
+          if (result.length >= limit) break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  function selectPopular(limit: number): HomeArticle[] {
+    const popular: HomeArticle[] = [];
+    if (all.length === 0 || limit <= 0) return popular;
+
+    const sortedAll = sortByViewsThenDate(all);
+
+    for (const article of sortedAll) {
+      if (usedIds.has(article.id)) continue;
+      popular.push(article);
+      usedIds.add(article.id);
+      if (popular.length >= limit) break;
+    }
+
+    if (popular.length < limit) {
+      for (const article of sortedAll) {
+        if (popular.some((p) => p.id === article.id)) continue;
+        popular.push(article);
+        usedIds.add(article.id);
+        if (popular.length >= limit) break;
+      }
+    }
+
+    return popular;
+  }
+
+  function selectCategoryBlocks(limit: number): CategoryBlock[] {
+    const blocks: CategoryBlock[] = [];
+    if (!homeCategories.length || !all.length || limit <= 0) return blocks;
+
+    for (const category of homeCategories) {
+      if (blocks.length >= 2) break;
+      const catArticles = all.filter((a) => articleHasCategory(a, category.id));
+      if (!catArticles.length) continue;
+
+      const sortedCat = sortByViewsThenDate(catArticles);
+      const blockArticles: HomeArticle[] = [];
+
+      for (const article of sortedCat) {
+        if (usedIds.has(article.id)) continue;
+        blockArticles.push(article);
+        usedIds.add(article.id);
+        if (blockArticles.length >= limit) break;
+      }
+
+      if (blockArticles.length < limit) {
+        for (const article of sortedCat) {
+          if (blockArticles.some((b) => b.id === article.id)) continue;
+          blockArticles.push(article);
+          usedIds.add(article.id);
+          if (blockArticles.length >= limit) break;
+        }
+      }
+
+      if (blockArticles.length > 0) {
+        blocks.push({ category, articles: blockArticles });
+      }
+    }
+
+    return blocks;
+  }
+
+  const mainArticle = selectMain();
+  const topArticles = selectTopMany(4);
+  const mustReadArticles = selectMustReadMany(2);
+  const popularArticles = selectPopular(4);
+  const categoryBlocks = selectCategoryBlocks(4);
+
+  return { mainArticle, topArticles, mustReadArticles, popularArticles, categoryBlocks };
+}
+
+const articles = await fetchArticles();
+const tags = await fetchTags();
+const displayTags = tags.slice(0, 20);
+const homeCategories = await fetchHomeCategories();
+
+const latestArticles: HomeArticle[] = articles.map((article) => {
+  const { url, alt } = getCoverImage(article);
+  const tagName = getPrimaryTagName(article);
+  const categoryName = getCategoryName(article);
+  const viewCount = typeof article.viewCount === 'number' ? article.viewCount : 0;
+  return {
+    id: String(article.id),
+    href: buildArticlePath(article),
+    title: article.title ?? '',
+    excerpt: article.excerpt ?? '',
+    imageUrl: url,
+    imageAlt: alt,
+    fallbackImageUrl: PLACEHOLDER_IMAGE_URL,
+    category: tagName || categoryName || 'Статьи',
+    authorName: getAuthorName(article),
+    publishedDate: article.publishedDate,
+    viewCount,
+    homeMainBlock: article.homeMainBlock ?? false,
+    homeTop: article.homeTop ?? false,
+    homeMustRead: article.homeMustRead ?? false,
+    categories: article.categories,
+  };
+});
+
+const { mainArticle, topArticles, mustReadArticles, popularArticles, categoryBlocks } = selectHomeLayout(
+  latestArticles,
+  homeCategories,
+);
+
+const featuredIds = new Set<string>();
+
+if (mainArticle) {
+  featuredIds.add(mainArticle.id);
+}
+
+for (const a of topArticles) {
+  featuredIds.add(a.id);
+}
+
+for (const a of mustReadArticles) {
+  featuredIds.add(a.id);
+}
+
+for (const a of popularArticles) {
+  featuredIds.add(a.id);
+}
+
+for (const block of categoryBlocks) {
+  for (const a of block.articles) {
+    featuredIds.add(a.id);
+  }
+}
+
+const feedArticles = latestArticles.filter((article) => !featuredIds.has(article.id));
+
+type SiteLanguage = 'ru' | 'en';
+
+type SiteSettings = {
+  currentLanguage?: SiteLanguage;
+  labels?: {
+    homeMainRu?: string;
+    homeMainEn?: string;
+    homeLatestRu?: string;
+    homeLatestEn?: string;
+    homeMustReadRu?: string;
+    homeMustReadEn?: string;
+    homePopularRu?: string;
+    homePopularEn?: string;
+    homeTagsRu?: string;
+    homeTagsEn?: string;
+  };
+};
+
+let siteSettings: SiteSettings | null = null;
+
+try {
+  const res = await fetch(`${CMS_URL}/api/globals/site-settings`);
+  if (res.ok) {
+    const data = await res.json();
+    siteSettings = data as SiteSettings;
+  }
+} catch (e) {
+  // игнорируем ошибку, используем дефолтные подписи
+}
+
+const currentLanguage: SiteLanguage = siteSettings?.currentLanguage === 'en' ? 'en' : 'ru';
+
+const labelHomeMain = currentLanguage === 'en'
+  ? siteSettings?.labels?.homeMainEn || 'Top stories'
+  : siteSettings?.labels?.homeMainRu || 'Главное';
+
+const labelHomeLatest = currentLanguage === 'en'
+  ? siteSettings?.labels?.homeLatestEn || 'Latest news'
+  : siteSettings?.labels?.homeLatestRu || 'Последние новости';
+
+const labelHomeMustRead = currentLanguage === 'en'
+  ? siteSettings?.labels?.homeMustReadEn || 'Must-Read Stories'
+  : siteSettings?.labels?.homeMustReadRu || 'Must-Read Stories';
+
+const labelHomePopular = currentLanguage === 'en'
+  ? siteSettings?.labels?.homePopularEn || 'Popular'
+  : siteSettings?.labels?.homePopularRu || 'Популярное';
+
+const labelHomeTags = currentLanguage === 'en'
+  ? siteSettings?.labels?.homeTagsEn || 'Tags'
+  : siteSettings?.labels?.homeTagsRu || 'Теги';
+
+// Generate SEO meta tags
+const articleCount = articles.length;
+const metaTitle = generateHomeTitle(articleCount);
+const metaDescription = generateHomeDescription(articleCount);
+---
+
+<BaseLayout title={metaTitle} description={metaDescription}>
+  <MainColumns>
+    {articles.length === 0 ? (
+      <p>Нет статей из CMS (articles.length = {articles.length}).</p>
+    ) : (
+      <>
+        {mainArticle && (
+          <section class="mb-12 grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)] items-start">
+            <div>
+              <CardA {...mainArticle} />
+            </div>
+
+            <div class="space-y-4">
+              <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-3">{labelHomeMain}</h2>
+              <div class="space-y-4">
+                {topArticles.map((article) => (
+                  <a
+                    href={article.href}
+                    class="block border-b border-border pb-4 last:border-b-0 last:pb-0"
+                  >
+                    {article.category && (
+                      <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
+                        {article.category}
+                      </p>
+                    )}
+                    <h3 class="text-sm font-semibold text-foreground leading-snug line-clamp-2">
+                      {article.title}
+                    </h3>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section id="article-feed" class="mb-12">
+          <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-4">{labelHomeLatest}</h2>
+          <div
+            id="article-feed-grid"
+            class="grid grid-cols-1 lg:grid-cols-2 gap-6"
+          >
+            {feedArticles.map((article, index) => (
+              <>
+                {index === 8 && mustReadArticles.length > 0 && (
+                  <div class="lg:col-span-2 mb-8">
+                    <h3 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-4">{labelHomeMustRead}</h3>
+                    <div class="grid gap-6 md:grid-cols-2">
+                      {mustReadArticles.map((mr) => (
+                        <a
+                          href={mr.href}
+                          class="block group"
+                        >
+                          <div class="rounded-card overflow-hidden mb-4">
+                            <img
+                              src={mr.imageUrl}
+                              alt={mr.imageAlt}
+                              width={640}
+                              height={360}
+                              loading="lazy"
+                              class="w-full h-auto object-cover aspect-video transition-transform duration-300 group-hover:scale-105"
+                              onerror={`this.onerror=null; this.src='${PLACEHOLDER_IMAGE_URL}';`}
+                            />
+                          </div>
+                          {mr.category && (
+                            <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
+                              {mr.category}
+                            </p>
+                          )}
+                          <h4 class="text-lg md:text-xl font-bold text-foreground leading-snug mb-2 line-clamp-2">
+                            {mr.title}
+                          </h4>
+                          <p class="text-xs text-muted">
+                            {mr.authorName}
+                          </p>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  class:list={[index < 14 ? '' : 'hidden']}
+                  data-index={index}
+                >
+                  <a
+                    href={article.href}
+                    class="flex gap-4 group"
+                  >
+                    <div class="flex-shrink-0 w-32 md:w-40 overflow-hidden rounded-image">
+                      <img
+                        src={article.imageUrl}
+                        alt={article.imageAlt}
+                        width={200}
+                        height={130}
+                        loading="lazy"
+                        class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        onerror={`this.onerror=null; this.src='${article.fallbackImageUrl}';`}
+                      />
+                    </div>
+                    <div class="flex-1 border-b border-border pb-4">
+                      {article.category && (
+                        <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
+                          {article.category}
+                        </p>
+                      )}
+                      <h3 class="text-sm md:text-base font-semibold text-foreground leading-snug line-clamp-2 group-hover:underline">
+                        {article.title}
+                      </h3>
+                      <p class="text-xs text-muted mt-2">
+                        {article.authorName}
+                      </p>
+                    </div>
+                  </a>
+                </div>
+              </>
+            ))}
+          </div>
+          <div class="mt-10 flex justify-center">
+            <button
+              id="article-feed-more"
+              type="button"
+              class="px-6 py-2 border border-border rounded-button text-sm text-foreground hover:bg-accent hover:text-white transition-colors duration-150"
+            >
+              Показать ещё
+            </button>
+          </div>
+        </section>
+
+        <section class="mb-8">
+          <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-4">{labelHomePopular}</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {popularArticles.map((article) => (
+              <a
+                href={article.href}
+                class="block border-b border-border pb-3 last:border-b-0 last:pb-0"
+              >
+                {article.category && (
+                  <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
+                    {article.category}
+                  </p>
+                )}
+                <h3 class="text-sm font-semibold text-foreground leading-snug line-clamp-2">
+                  {article.title}
+                </h3>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        {categoryBlocks.length > 0 && (
+          <section class="mb-8 grid gap-8 lg:grid-cols-2">
+            {categoryBlocks.map((block) => (
+              <div class="space-y-4">
+                <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-4">{block.category.name}</h2>
+                <div class="space-y-3">
+                  {block.articles.map((article) => (
+                    <a
+                      href={article.href}
+                      class="block border-b border-border pb-3 last:border-b-0 last:pb-0"
+                    >
+                      {article.category && (
+                        <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
+                          {article.category}
+                        </p>
+                      )}
+                      <h3 class="text-sm font-semibold text-foreground leading-snug line-clamp-2">
+                        {article.title}
+                      </h3>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
+        <section class="mb-12">
+          <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-4">{labelHomeTags}</h2>
+          <div class="flex flex-wrap gap-2">
+            {displayTags.map((tag) => (
+              <a
+                href={`/tags/${tag.slug}`}
+                class="inline-flex px-3 py-1 bg-background border border-border rounded-full text-xs font-medium text-foreground hover:bg-accent hover:text-background hover:border-accent transition-colors duration-150"
+              >
+                {tag.name}
+              </a>
+            ))}
+            <a
+              href="/tags"
+              class="inline-flex px-3 py-1 bg-background border border-border rounded-full text-xs font-medium text-foreground hover:bg-accent hover:text-background hover:border-accent transition-colors duration-150"
+            >
+              Все теги
+            </a>
+          </div>
+        </section>
+
+        <script define:vars={{ PAGE_LIMIT, PLACEHOLDER_IMAGE_URL }}>
+          (function() {
+            var grid = document.getElementById('article-feed-grid');
+            var moreBtn = document.getElementById('article-feed-more');
+            if (!grid || !moreBtn) return;
+
+              var wrappers = Array.prototype.slice.call(
+                grid.querySelectorAll('[data-index]')
+              );
+
+              if (wrappers.length < PAGE_LIMIT) {
+                moreBtn.style.display = 'none';
+                return;
+              }
+
+              var currentPage = 1;
+              var isLoading = false;
+              var hasMore = true;
+
+              function buildArticlePath(doc) {
+                var slug = doc.slug || '';
+                var id = doc.id != null ? String(doc.id) : '';
+                if (slug && id) return '/article/' + slug + '-' + id + '.html';
+                if (slug) return '/article/' + slug;
+                if (id) return '/article/' + id;
+                return '/';
+              }
+
+              function getCoverImage(doc) {
+                if (doc.feedImageUrl) {
+                  return { url: doc.feedImageUrl, alt: doc.title || '' };
+                }
+                var cover = doc.coverImage && typeof doc.coverImage === 'object'
+                  ? doc.coverImage
+                  : null;
+                var url = (cover && cover.url) || PLACEHOLDER_IMAGE_URL;
+                var alt = (cover && cover.alt) || (doc.title || '');
+                return { url: url, alt: alt };
+              }
+
+              function getCategoryName(doc) {
+                var categories = Array.isArray(doc.categories) ? doc.categories : [];
+                if (!categories.length) return '';
+                var first = categories[0];
+                if (first && typeof first === 'object') {
+                  return first.name || '';
+                }
+                return '';
+              }
+
+              function getAuthorName(doc) {
+                var author = doc.author;
+                if (author && typeof author === 'object') {
+                  return author.name || 'Unknown';
+                }
+                return 'Unknown';
+              }
+
+              function createCardWrapperFromDoc(doc, index) {
+                var cover = getCoverImage(doc);
+                var category = getCategoryName(doc);
+                var authorName = getAuthorName(doc);
+                var href = buildArticlePath(doc);
+                var title = doc.title || '';
+                var excerpt = doc.excerpt || '';
+
+                var wrapper = document.createElement('div');
+                wrapper.setAttribute('data-index', String(index));
+
+                var link = document.createElement('a');
+                link.href = href;
+                link.className = 'flex gap-4 group';
+
+                var imageWrapper = document.createElement('div');
+                imageWrapper.className = 'flex-shrink-0 w-32 md:w-40 overflow-hidden rounded-image';
+
+                var img = document.createElement('img');
+                img.src = cover.url;
+                img.alt = cover.alt || '';
+                img.width = 200;
+                img.height = 130;
+                img.loading = 'lazy';
+                img.className = 'w-full h-full object-cover transition-transform duration-300 group-hover:scale-105';
+                img.onerror = function () {
+                  this.onerror = null;
+                  this.src = PLACEHOLDER_IMAGE_URL;
+                };
+
+                imageWrapper.appendChild(img);
+
+                var content = document.createElement('div');
+                content.className = 'flex-1 border-b border-border pb-4';
+
+                if (category) {
+                  var catP = document.createElement('p');
+                  catP.className = 'text-[11px] font-semibold tracking-[0.18em] uppercase text-accent';
+                  catP.textContent = category;
+                  content.appendChild(catP);
+                }
+
+                var titleEl = document.createElement('h3');
+                titleEl.className = 'text-sm md:text-base font-semibold text-foreground leading-snug line-clamp-2 group-hover:underline';
+                titleEl.textContent = title;
+                content.appendChild(titleEl);
+
+                if (excerpt) {
+                  var excerptP = document.createElement('p');
+                  excerptP.className = 'text-sm text-muted leading-relaxed line-clamp-3';
+                  excerptP.textContent = excerpt;
+                  content.appendChild(excerptP);
+                }
+
+                var authorEl = document.createElement('p');
+                authorEl.className = 'text-[11px] text-muted mt-1';
+                authorEl.textContent = authorName;
+                content.appendChild(authorEl);
+
+                link.appendChild(imageWrapper);
+                link.appendChild(content);
+                wrapper.appendChild(link);
+
+                return wrapper;
+              }
+
+              async function loadMore() {
+                if (isLoading || !hasMore) return;
+                isLoading = true;
+                moreBtn.disabled = true;
+
+                try {
+                  var nextPage = currentPage + 1;
+                  var res = await fetch('/api/frontend/articles?page=' + nextPage + '&limit=' + PAGE_LIMIT);
+                  if (!res.ok) {
+                    throw new Error('HTTP ' + res.status);
+                  }
+                  var data = await res.json();
+                  var docs = Array.isArray(data.docs) ? data.docs : [];
+
+                  if (!docs.length) {
+                    hasMore = false;
+                    moreBtn.style.display = 'none';
+                    return;
+                  }
+
+                  for (var i = 0; i < docs.length; i++) {
+                    var overallIndex = wrappers.length;
+                    var wrapper = createCardWrapperFromDoc(docs[i], overallIndex);
+                    wrappers.push(wrapper);
+                    grid.appendChild(wrapper);
+                  }
+
+                  currentPage = typeof data.page === 'number' ? data.page : nextPage;
+
+                  if (
+                    (typeof data.hasNextPage === 'boolean' && !data.hasNextPage) ||
+                    (typeof data.totalPages === 'number' && typeof data.page === 'number' && data.page >= data.totalPages) ||
+                    (data.nextPage == null)
+                  ) {
+                    hasMore = false;
+                    moreBtn.style.display = 'none';
+                  }
+                } catch (e) {
+                  console.error('Failed to load more articles', e);
+                  hasMore = false;
+                  moreBtn.style.display = 'none';
+                } finally {
+                  isLoading = false;
+                  moreBtn.disabled = false;
+                }
+              }
+
+            moreBtn.addEventListener('click', function () {
+              loadMore();
+            });
+          })();
+        </script>
+      </>
+    )}
+  </MainColumns>
+</BaseLayout>

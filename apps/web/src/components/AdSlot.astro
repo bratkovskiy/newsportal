@@ -1,0 +1,85 @@
+---
+const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
+
+const {
+  placementKey,
+  defaultWidth = 300,
+  defaultHeight = 250,
+  class: className,
+} = Astro.props as any;
+
+let slot: any = null;
+
+try {
+  const url = new URL('/api/ad-slots', CMS_URL);
+  url.searchParams.set('where[key][equals]', placementKey);
+  url.searchParams.set('limit', '1');
+
+  const res = await fetch(url.toString());
+  if (res.ok) {
+    const data: any = await res.json();
+    if (Array.isArray(data?.docs) && data.docs.length > 0) {
+      const doc = data.docs[0];
+      slot = {
+        enabled: !!doc.enabled,
+        provider: doc.provider,
+        yandexBlockId: doc.yandexBlockId,
+        adsenseSlotId: doc.adsenseSlotId,
+        adFormat: doc.adFormat,
+        width: typeof doc.width === 'number' ? doc.width : undefined,
+        height: typeof doc.height === 'number' ? doc.height : undefined,
+      };
+    }
+  }
+} catch (e) {
+  console.error('Failed to load ad slot config for', placementKey, e);
+}
+
+const provider = slot && slot.provider ? slot.provider : 'yan';
+
+const width = (slot && typeof slot.width === 'number') ? slot.width : defaultWidth;
+const height = (slot && typeof slot.height === 'number') ? slot.height : defaultHeight;
+
+const slotId = slot && slot.yandexBlockId ? slot.yandexBlockId : '';
+const adUnit = slot && slot.adsenseSlotId ? slot.adsenseSlotId : '';
+const adFormat = slot && slot.adFormat ? slot.adFormat : 'auto';
+
+const isConfigured =
+  (provider === 'yan' && !!slotId) ||
+  (provider === 'adsense' && !!adUnit) ||
+  provider === 'direct' ||
+  provider === 'prebid';
+
+const isEnabled = Boolean(slot && slot.enabled && isConfigured);
+
+const minHeight = `min-h-[${height}px]`;
+const minWidth = `min-w-[${width}px]`;
+---
+
+<div
+  class:list={[
+    'ad-slot-placeholder',
+    'flex justify-center items-center bg-gray-100 border border-dashed border-border',
+    minHeight,
+    minWidth,
+    className,
+  ]}
+  style={{ minHeight: `${height}px`, width: '100%' }}
+  data-provider={provider}
+  data-slot-id={slotId}
+  data-ad-unit={adUnit}
+  data-ad-format={adFormat}
+  data-enabled={isEnabled ? 'true' : 'false'}
+  data-configured={isConfigured ? 'true' : 'false'}
+  data-placement-key={placementKey}
+>
+  <div class="text-xs text-muted">Advertisement</div>
+</div>
+
+<script is:inline src="/js/adloader.js"></script>
+
+<style is:global>
+  .ad-slot-placeholder[data-enabled="false"] {
+    display: none;
+  }
+</style>

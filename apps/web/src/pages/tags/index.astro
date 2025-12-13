@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MainColumns from '../../layouts/MainColumns.astro';
+
+const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
+
+// Загружаем все теги
+let tags: Array<{ id: string; name: string; slug: string; metaTitle?: string; metaDescription?: string }> = [];
+
+try {
+  const response = await fetch(`${CMS_URL}/api/tags?limit=1000&sort=name`);
+  if (response.ok) {
+    const data = await response.json();
+    tags = (data.docs || []).map((tag: any) => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      metaTitle: tag.metaTitle,
+      metaDescription: tag.metaDescription,
+    }));
+  }
+} catch (error) {
+  console.error('Error fetching tags:', error);
+}
+
+const metaTitle = 'Все теги - LADY.NEWS';
+const metaDescription = 'Полный список тегов на LADY.NEWS';
+---
+
+<BaseLayout title={metaTitle} description={metaDescription}>
+  <MainColumns>
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="/" class="text-muted hover:text-accent">Главная</a>
+      <span class="mx-2">/</span>
+      <span>Теги</span>
+    </nav>
+
+    <h1 class="text-3xl font-bold text-foreground mb-8">Все теги</h1>
+
+    {tags.length > 0 ? (
+      <div class="flex flex-wrap gap-3">
+        {tags.map((tag) => (
+          <a
+            href={`/tags/${tag.slug}`}
+            class="inline-block px-4 py-2 bg-background border border-border rounded-full text-sm font-medium text-foreground hover:bg-accent hover:text-background hover:border-accent transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            {tag.name}
+          </a>
+        ))}
+      </div>
+    ) : (
+      <p class="text-muted">Теги не найдены</p>
+    )}
+  </MainColumns>
+</BaseLayout>

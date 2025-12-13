@@ -1,0 +1,65 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MainColumns from '../layouts/MainColumns.astro';
+import { SITE_CONFIG } from '../config/seo';
+
+const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
+
+type SiteLanguage = 'ru' | 'en';
+
+type SiteSettings = {
+  currentLanguage?: SiteLanguage;
+};
+
+type LegalPage = {
+  contentRu?: string;
+  contentEn?: string;
+};
+
+let siteLanguage: SiteLanguage = 'ru';
+
+try {
+  const res = await fetch(`${CMS_URL}/api/globals/site-settings`);
+  if (res.ok) {
+    const data = (await res.json()) as SiteSettings;
+    siteLanguage = data.currentLanguage === 'en' ? 'en' : 'ru';
+  }
+} catch (e) {
+  // оставляем язык по умолчанию (ru)
+}
+
+let legalContent = '';
+
+try {
+  const res = await fetch(`${CMS_URL}/api/globals/legal-page`);
+  if (res.ok) {
+    const data = (await res.json()) as LegalPage;
+    legalContent = siteLanguage === 'en' ? (data.contentEn || '') : (data.contentRu || '');
+  }
+} catch (e) {
+  legalContent = '';
+}
+
+const pageTitle = siteLanguage === 'en' ? 'Legal information' : 'Правовая информация';
+const pageDescription = siteLanguage === 'en'
+  ? `Legal information and policies of ${SITE_CONFIG.brandName}.`
+  : `Правовая информация и условия использования сайта ${SITE_CONFIG.brandName}.`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <MainColumns>
+    <article class="max-w-3xl mx-auto py-8 lg:py-10">
+      <h1 class="text-3xl md:text-4xl font-bold text-foreground mb-6">{pageTitle}</h1>
+
+      {legalContent ? (
+        <div class="prose article-prose max-w-none" set:html={legalContent} />
+      ) : (
+        <p class="text-sm text-muted">
+          {siteLanguage === 'en'
+            ? 'No legal information has been published yet.'
+            : 'Правовая информация пока не опубликована.'}
+        </p>
+      )}
+    </article>
+  </MainColumns>
+</BaseLayout>

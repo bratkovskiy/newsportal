@@ -1,0 +1,224 @@
+{
+  "эпики": [
+    {
+      "id": "E1",
+      "название": "Дизайн‑система и токены"
+    },
+    {
+      "id": "E2",
+      "название": "Payload CMS и схема данных"
+    },
+    {
+      "id": "E3",
+      "название": "Фоновые воркеры импорта (RSS/JSON)"
+    },
+    {
+      "id": "E4",
+      "название": "Публичные страницы (Astro, SSG)"
+    },
+    {
+      "id": "E5",
+      "название": "Поиск (серверный)"
+    },
+    {
+      "id": "E6",
+      "название": "SEO и карты сайта"
+    },
+    {
+      "id": "E7",
+      "название": "Мониторинг CWV и аналитика"
+    },
+    {
+      "id": "E8",
+      "название": "Деплой и инфраструктура"
+    }
+  ],
+  "задачи": [
+    {
+      "эпик": "E1",
+      "id": "FE-001",
+      "название": "Tailwind‑конфиг с дизайн‑токенами (цвета/типографика/радиусы/тени)",
+      "результаты": [
+        "apps/web/tailwind.config.ts",
+        "apps/web/src/styles/tokens.css"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E1",
+      "id": "FE-002",
+      "название": "Компоненты карточек A/B/C + лэйаут статьи (Astro)",
+      "результаты": [
+        "apps/web/src/components/CardA.astro",
+        "apps/web/src/components/CardB.astro",
+        "apps/web/src/components/CardC.astro",
+        "apps/web/src/layouts/Article.astro"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E1",
+      "id": "FE-003",
+      "название": "Две темы (Editorial Minimal, Soft Fashion) на CSS‑переменных",
+      "результаты": [
+        "apps/web/src/styles/themes/editorial.css",
+        "apps/web/src/styles/themes/soft.css"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E2",
+      "id": "BE-001",
+      "название": "Коллекции Payload: Articles/Authors/Categories/Tags/Feeds/Media/Likes",
+      "результаты": [
+        "apps/cms/src/payload.config.ts"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E2",
+      "id": "BE-002",
+      "название": "Вебхук публикации → пересборка Astro (endpoint + секрет)",
+      "результаты": [
+        "apps/cms/src/hooks/revalidate.ts",
+        "apps/web/api/revalidate.ts"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E3",
+      "id": "WK-001",
+      "название": "Очереди BullMQ: feed:fetch, feed:parse, article:images, article:publish",
+      "результаты": [
+        "apps/jobs/src/queues/*.ts"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E3",
+      "id": "WK-002",
+      "название": "Парсер с namespace (content:, custom:) и санитайзом allowlist",
+      "результаты": [
+        "apps/jobs/src/parsers/rss.ts",
+        "apps/jobs/src/sanitize/html.ts"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E3",
+      "id": "WK-003",
+      "название": "Пайплайн изображений (скачать → определить размер → AVIF/WEBP пресеты → S3)",
+      "результаты": [
+        "apps/jobs/src/images/pipeline.ts"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E4",
+      "id": "FE-101",
+      "название": "Главная, Категория, Статья, Автор, Поиск, 404, О проекте, Дисклеймер",
+      "результаты": [
+        "apps/web/src/pages/*.astro"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E4",
+      "id": "FE-102",
+      "название": "Серверный AdSlot + ленивый загрузчик",
+      "результаты": [
+        "apps/web/src/components/AdSlot.astro",
+        "apps/web/public/js/adloader.js"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E4",
+      "id": "FE-103",
+      "название": "Share (ссылки/Web Share API) и Like (островок ≤3KB)",
+      "результаты": [
+        "apps/web/src/components/Share.astro",
+        "apps/web/src/components/LikeIsland.jsx"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E5",
+      "id": "SR-001",
+      "название": "Схема Typesense и индексатор",
+      "результаты": [
+        "apps/search/schema.json",
+        "apps/jobs/src/indexers/typesense.ts"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E5",
+      "id": "SR-002",
+      "название": "SSR‑страница /search с query‑параметрами",
+      "результаты": [
+        "apps/web/src/pages/search.astro"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E6",
+      "id": "SEO-001",
+      "название": "Компоненты schema.org и хелперы мета‑тегов",
+      "результаты": [
+        "apps/web/src/components/seo/*.astro"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E6",
+      "id": "SEO-002",
+      "название": "Sitemap по сущностям и robots.txt",
+      "результаты": [
+        "apps/web/src/pages/sitemap.xml.ts",
+        "apps/web/src/pages/robots.txt.ts"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E7",
+      "id": "AN-001",
+      "название": "Конфиги Lighthouse CI + WebPageTest (мобайл)",
+      "результаты": [
+        ".lighthouserc.json",
+        "wpt.config.json"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E7",
+      "id": "AN-002",
+      "название": "События GA4/Метрика для ads/like/share",
+      "результаты": [
+        "apps/web/src/lib/analytics.ts"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E8",
+      "id": "CI-001",
+      "название": "Dockerfile и docker-compose для cms/web/jobs/redis/postgres",
+      "результаты": [
+        "docker-compose.yml",
+        "apps/web/Dockerfile",
+        "apps/cms/Dockerfile",
+        "apps/jobs/Dockerfile"
+      ],
+      "приоритет": "высокий"
+    },
+    {
+      "эпик": "E8",
+      "id": "CI-002",
+      "название": "Заголовки кэширования CDN и заголовки безопасности",
+      "результаты": [
+        "apps/web/src/middleware/headers.ts"
+      ],
+      "приоритет": "высокий"
+    }
+  ]
+}

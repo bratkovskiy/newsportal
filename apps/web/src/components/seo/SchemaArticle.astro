@@ -1,0 +1,38 @@
+---
+export interface Props {
+  title: string;
+  description: string;
+  url: string;
+  imageUrl: string;
+  datePublished: Date;
+  dateModified?: Date;
+  authorName: string;
+}
+
+const { title, description, url, imageUrl, datePublished, dateModified, authorName } = Astro.props;
+
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": title,
+  "description": description,
+  "image": imageUrl,
+  "url": url,
+  "datePublished": datePublished.toISOString(),
+  "dateModified": dateModified ? dateModified.toISOString() : datePublished.toISOString(),
+  "author": {
+    "@type": "Person",
+    "name": authorName
+  },
+  "publisher": {
+      "@type": "Organization",
+      "name": "FashionSite",
+      "logo": {
+          "@type": "ImageObject",
+          "url": "/logo.png" // Replace with your actual logo URL
+      }
+  }
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(schema)} />

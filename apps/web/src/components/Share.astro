@@ -1,0 +1,44 @@
+---
+export interface Props {
+  title: string;
+  url: string;
+}
+
+const { title, url } = Astro.props;
+
+const shareLinks = {
+  telegram: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
+  whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(title + ' ' + url)}`,
+  vk: `https://vk.com/share.php?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`,
+};
+---
+
+<div class="share-buttons">
+  <button id="native-share-btn" class="hidden">Share Natively</button>
+  <div id="fallback-share" class="flex gap-2">
+    <a href={shareLinks.telegram} target="_blank" rel="noopener noreferrer" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300">TG</a>
+    <a href={shareLinks.whatsapp} target="_blank" rel="noopener noreferrer" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300">WA</a>
+    <a href={shareLinks.vk} target="_blank" rel="noopener noreferrer" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300">VK</a>
+  </div>
+</div>
+
+<script define:vars={{ title, url }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    const nativeShareBtn = document.getElementById('native-share-btn');
+    const fallbackShare = document.getElementById('fallback-share');
+
+    if (navigator.share) {
+      nativeShareBtn.classList.remove('hidden');
+      fallbackShare.classList.add('hidden');
+
+      nativeShareBtn.addEventListener('click', async () => {
+        try {
+          await navigator.share({ title, url });
+          console.log('Shared successfully');
+        } catch (err) {
+          console.error('Error sharing:', err);
+        }
+      });
+    } 
+  });
+</script>

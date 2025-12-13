@@ -1,0 +1,332 @@
+---
+import '../styles/tokens.css';
+
+export interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+
+// Загружаем категории для меню (в SSR используем CMS_URL для Docker)
+const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
+let menuCategories: Array<{ name: string; slug: string }> = [];
+
+try {
+  const response = await fetch(`${CMS_URL}/api/categories?limit=10&sort=name`);
+  if (response.ok) {
+    const data = await response.json();
+    menuCategories = (data.docs || []).map((cat: any) => ({
+      name: cat.name,
+      slug: cat.slug,
+    }));
+  }
+} catch (error) {
+  console.error('Failed to fetch categories for menu:', error);
+}
+
+type AnalyticsSettings = {
+  yandexMetrica?: {
+    enabled?: boolean;
+    counterId?: string;
+  };
+  googleAnalytics?: {
+    enabled?: boolean;
+    measurementId?: string;
+  };
+  webmaster?: {
+    googleVerification?: string;
+    yandexVerification?: string;
+  };
+  customHeadHtml?: string;
+};
+
+let analyticsSettings: AnalyticsSettings | null = null;
+
+try {
+  const res = await fetch(`${CMS_URL}/api/globals/analytics-settings`);
+  if (res.ok) {
+    const data = await res.json();
+    analyticsSettings = data as AnalyticsSettings;
+  }
+} catch (error) {
+  console.error('Failed to fetch analytics settings:', error);
+}
+
+type SiteLanguage = 'ru' | 'en';
+
+type SiteSettings = {
+  currentLanguage?: SiteLanguage;
+  siteName?: string;
+  headerLogoCss?: string;
+  headerTagline?: string;
+  labels?: {
+    homeMainRu?: string;
+    homeMainEn?: string;
+    homeLatestRu?: string;
+    homeLatestEn?: string;
+    homeMustReadRu?: string;
+    homeMustReadEn?: string;
+    homePopularRu?: string;
+    homePopularEn?: string;
+    homeTagsRu?: string;
+    homeTagsEn?: string;
+    articleReadMoreRu?: string;
+    articleReadMoreEn?: string;
+    articleAlsoOnTopicRu?: string;
+    articleAlsoOnTopicEn?: string;
+  };
+  footer?: {
+    textRu?: string;
+    textEn?: string;
+  };
+};
+
+let siteSettings: SiteSettings | null = null;
+
+try {
+  const res = await fetch(`${CMS_URL}/api/globals/site-settings`);
+  if (res.ok) {
+    const data = await res.json();
+    siteSettings = data as SiteSettings;
+  }
+} catch (error) {
+  console.error('Failed to fetch site settings:', error);
+}
+
+const siteNameRaw = siteSettings?.siteName || 'LADY.NEWS';
+// Очищенная текстовая версия имени (без HTML-тегов) — используем в футере/копирайте
+const siteNameText = siteNameRaw.replace(/<[^>]*>/g, '');
+const currentLanguage: SiteLanguage = siteSettings?.currentLanguage === 'en' ? 'en' : 'ru';
+const currentYear = new Date().getFullYear();
+const footerTextSuffixRu = siteSettings?.footer?.textRu || `${siteNameText}. Все права защищены.`;
+const footerTextSuffixEn = siteSettings?.footer?.textEn || `${siteNameText}. All rights reserved.`;
+const footerText = currentLanguage === 'en'
+  ? `${currentYear} ${footerTextSuffixEn}`
+  : `${currentYear} ${footerTextSuffixRu}`;
+---
+
+<!DOCTYPE html>
+<html lang={currentLanguage === 'en' ? 'en' : 'ru'}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://static.piter.tv" crossorigin>
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap"
+      />
+    </noscript>
+    <title>{title}</title>
+    <meta name="description" content={description} />
+
+    {analyticsSettings?.webmaster?.googleVerification && (
+      <meta
+        name="google-site-verification"
+        content={analyticsSettings.webmaster.googleVerification}
+      />
+    )}
+
+    {analyticsSettings?.webmaster?.yandexVerification && (
+      <meta
+        name="yandex-verification"
+        content={analyticsSettings.webmaster.yandexVerification}
+      />
+    )}
+
+    {analyticsSettings?.googleAnalytics?.enabled &&
+      analyticsSettings.googleAnalytics.measurementId && (
+        <>
+          <script
+            async
+            src={`https://www.googletagmanager.com/gtag/js?id=${analyticsSettings.googleAnalytics.measurementId}`}
+          ></script>
+          <script is:inline>
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${analyticsSettings.googleAnalytics.measurementId}');
+            `}
+          </script>
+        </>
+      )}
+
+    {analyticsSettings?.yandexMetrica?.enabled &&
+      analyticsSettings.yandexMetrica.counterId && (
+        <>
+          <script is:inline>
+            {`
+              (function(m,e,t,r,i,k,a){
+                m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0];
+                k.async=1;k.src=r;a.parentNode.insertBefore(k,a);
+              })(window,document,'script','https://mc.yandex.ru/metrika/tag.js','ym');
+
+              ym(${analyticsSettings.yandexMetrica.counterId}, 'init', {
+                clickmap:true,
+                trackLinks:true,
+                accurateTrackBounce:true,
+                webvisor:true
+              });
+            `}
+          </script>
+          <noscript>
+            <div>
+              <img
+                src={`https://mc.yandex.ru/watch/${analyticsSettings.yandexMetrica.counterId}`}
+                style="position:absolute; left:-9999px;"
+                alt=""
+              />
+            </div>
+          </noscript>
+        </>
+      )}
+    {analyticsSettings?.customHeadHtml && (
+      <Fragment set:html={analyticsSettings.customHeadHtml} />
+    )}
+
+    {siteSettings?.headerLogoCss && (
+      <Fragment set:html={`<style>${siteSettings.headerLogoCss}</style>`} />
+    )}
+  </head>
+  <body class="bg-background text-foreground font-sans antialiased">
+    <header class="border-b border-border bg-background sticky top-0 z-50">
+      <div class="container mx-auto px-4">
+        <div class="h-16 lg:h-20 flex items-center">
+          <div class="flex items-center gap-6 w-full">
+          <a href="/" class="site-logo-header text-foreground">
+            <span class="site-logo-header-main" set:html={siteNameRaw} />
+            {siteSettings?.headerTagline && (
+              <span class="site-logo-header-subline">{siteSettings.headerTagline}</span>
+            )}
+          </a>
+
+          <nav class="hidden md:flex items-center gap-6 text-xs font-medium uppercase tracking-[0.18em] text-muted flex-1 justify-center">
+            <a href="/" class="hover:text-accent transition-colors">Главная</a>
+            {menuCategories.map(category => (
+              <a href={`/categories/${category.slug}`} class="hover:text-accent transition-colors">
+                {category.name}
+              </a>
+            ))}
+            <a href="/tags" class="hover:text-accent transition-colors">Теги</a>
+          </nav>
+
+          <div class="ml-auto flex items-center gap-3">
+            <button
+              type="button"
+              class="mobile-burger md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-border text-foreground hover:text-accent transition-colors"
+              aria-expanded="false"
+              aria-controls="mobile-menu"
+              data-mobile-menu-toggle
+            >
+              <span class="sr-only">Открыть меню</span>
+              <span class="mobile-burger-icon flex flex-col items-center justify-center gap-1 w-5 h-5">
+                <span class="mobile-burger-line block w-full h-0.5 bg-current rounded-full"></span>
+                <span class="mobile-burger-line block w-full h-0.5 bg-current rounded-full"></span>
+                <span class="mobile-burger-line block w-full h-0.5 bg-current rounded-full"></span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="mobile-menu"
+          class="md:hidden hidden fixed inset-x-0 top-16 bottom-0 z-40 border-t border-border bg-background text-xs font-medium uppercase tracking-[0.18em] text-muted"
+        >
+          <nav class="flex flex-col gap-4 items-center justify-start pt-6 text-center">
+            <a href="/" class="hover:text-accent transition-colors">Главная</a>
+            {menuCategories.map(category => (
+              <a href={`/categories/${category.slug}`} class="hover:text-accent transition-colors">
+                {category.name}
+              </a>
+            ))}
+            <a href="/tags" class="hover:text-accent transition-colors">Теги</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="border-t border-border mt-12 py-8">
+      <div class="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted">
+        <div class="font-semibold tracking-[0.18em] uppercase text-muted">
+          {siteNameText}
+        </div>
+        <div class="flex flex-col items-center md:items-end gap-1">
+          <a
+            href="/legal"
+            class="hover:text-accent transition-colors"
+          >
+            {currentLanguage === 'en' ? 'Legal information' : 'Правовая информация'}
+          </a>
+          <a
+            href="/privacy-policy"
+            class="hover:text-accent transition-colors"
+          >
+            {currentLanguage === 'en' ? 'Privacy Policy' : 'Политика конфиденциальности'}
+          </a>
+          <a
+            href="/cookies-policy"
+            class="hover:text-accent transition-colors"
+          >
+            {currentLanguage === 'en' ? 'Cookies Policy' : 'Политика использования файлов Cookie'}
+          </a>
+          <a
+            href="/contacts"
+            class="hover:text-accent transition-colors"
+          >
+            {currentLanguage === 'en' ? 'Contacts' : 'Контакты'}
+          </a>
+          <p class="text-center md:text-right">
+            &copy; {footerText}
+          </p>
+        </div>
+      </div>
+    </footer>
+    <script is:inline>
+      if (typeof window !== 'undefined') {
+        window.addEventListener('DOMContentLoaded', function () {
+          var toggle = document.querySelector('[data-mobile-menu-toggle]');
+          var menu = document.getElementById('mobile-menu');
+          if (!toggle || !menu) return;
+
+          toggle.addEventListener('click', function () {
+            var isHidden = menu.classList.contains('hidden');
+            if (isHidden) {
+              menu.classList.remove('hidden');
+              toggle.setAttribute('aria-expanded', 'true');
+              toggle.classList.add('is-open');
+              document.body.classList.add('overflow-hidden');
+            } else {
+              menu.classList.add('hidden');
+              toggle.setAttribute('aria-expanded', 'false');
+              toggle.classList.remove('is-open');
+              document.body.classList.remove('overflow-hidden');
+            }
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

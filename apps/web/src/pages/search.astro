@@ -1,0 +1,121 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MainColumns from '../layouts/MainColumns.astro';
+import { generateSearchTitle, generateSearchDescription, SITE_CONFIG } from '../config/seo';
+import CardC from '../components/CardC.astro';
+
+// В SSR используем CMS_URL (для Docker - http://cms:3000)
+const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
+
+const rawQuery = Astro.url.searchParams.get('q') || '';
+const query = rawQuery.trim();
+
+type SearchResultItem = {
+  href: string;
+  title: string;
+  imageUrl: string;
+  imageAlt: string;
+};
+
+let searchResults: SearchResultItem[] = [];
+let searchTime = 0;
+
+if (query.length >= 2) {
+  try {
+    const cmsUrl = new URL('/api/articles', CMS_URL);
+    cmsUrl.searchParams.set('where[status][equals]', 'published');
+    cmsUrl.searchParams.set('depth', '1');
+    cmsUrl.searchParams.set('sort', '-publishedDate');
+    cmsUrl.searchParams.set('page', '1');
+    cmsUrl.searchParams.set('limit', '20');
+
+    // Ищем по title, excerpt и contentHtml одновременно
+    cmsUrl.searchParams.set('where[or][0][title][like]', query);
+    cmsUrl.searchParams.set('where[or][1][excerpt][like]', query);
+    cmsUrl.searchParams.set('where[or][2][contentHtml][like]', query);
+
+    const startTime = Date.now();
+    const res = await fetch(cmsUrl.toString());
+    searchTime = Date.now() - startTime;
+
+    if (res.ok) {
+      const data = await res.json();
+      const docs: any[] = Array.isArray(data?.docs) ? data.docs : [];
+
+      searchResults = docs.map((doc) => {
+        const slug = doc.slug || String(doc.id);
+        const id = String(doc.id);
+        const href = slug && id ? `/article/${slug}-${id}.html` : slug ? `/article/${slug}` : `/article/${id}`;
+
+        return {
+          href,
+          title: doc.title || '',
+          imageUrl: '/placeholder-1.jpg',
+          imageAlt: doc.title || '',
+        };
+      });
+    }
+  } catch (e) {
+    // В случае ошибки просто оставляем searchResults пустым
+    searchResults = [];
+  }
+}
+
+// Generate SEO meta tags
+const resultCount = searchResults.length;
+const metaTitle = query
+  ? generateSearchTitle(query, resultCount)
+  : `Поиск по сайту | ${SITE_CONFIG.brandName}`;
+const metaDescription = query
+  ? generateSearchDescription(query, resultCount)
+  : `Поиск новостей и статей на ${SITE_CONFIG.brandName}.`;
+---
+
+<BaseLayout title={metaTitle} description={metaDescription}>
+  <MainColumns>
+    <h1 class="text-3xl font-bold text-foreground mb-8 text-center">Поиск по сайту</h1>
+
+    <form action="/search" method="GET" class="max-w-xl mx-auto mb-12">
+      <div class="flex">
+        <input
+          type="search"
+          name="q"
+          value={query}
+          placeholder="Введите запрос..."
+          class="w-full px-4 py-2 border border-border rounded-l-button focus:outline-none focus:ring-2 focus:ring-accent"
+        />
+        <button
+          type="submit"
+          class="bg-accent text-white px-6 py-2 rounded-r-button hover:opacity-90"
+        >
+          Найти
+        </button>
+      </div>
+    </form>
+
+    <div class="max-w-2xl mx-auto">
+      {query && query.length < 2 && (
+        <div class="mb-8 text-center text-muted">
+          <p>Введите не менее двух символов для поиска.</p>
+        </div>
+      )}
+
+      {query && query.length >= 2 && (
+        <div class="mb-8 text-center text-muted">
+          <p>
+            Найдено {searchResults.length} материалов по запросу «{query}»
+            {searchTime > 0 && ` за ${searchTime} мс`}.
+          </p>
+        </div>
+      )}
+
+      <div class="space-y-4">
+        {searchResults.map(result => <CardC {...result} />)}
+      </div>
+
+      {searchResults.length === 0 && query.length >= 2 && (
+        <p class="text-center text-muted mt-8">Ничего не найдено.</p>
+      )}
+    </div>
+  </MainColumns>
+</BaseLayout>

@@ -1,0 +1,26 @@
+эпик:
+  id: E3
+  название: Фоновые воркеры импорта (RSS/JSON)
+задача:
+  id: WK-001
+  заголовок: 'Очереди BullMQ: feed:fetch, feed:parse, article:images, article:publish'
+цель: 'Очереди BullMQ: feed:fetch, feed:parse, article:images, article:publish для
+  эпика «Фоновые воркеры импорта (RSS/JSON)»'
+контекстные_файлы:
+- docs/tz_context.md
+- docs/requirements.md
+результаты:
+- apps/jobs/src/queues/*.ts
+критерии_приёмки:
+- 'Идемпотентность: jobId = guid|hash_norm'
+- Повторы с backoff; DLQ для проваленных задач
+- Логи сохраняются в БД
+ограничения:
+- Mobile-first; на контентных страницах отсутствует глобальный SPA
+- 'Клиентский JS только в островках при необходимости (hydrate: client:visible/idle)'
+- Рекламный компонент AdSlot провайдер-независим; скрипты грузятся лениво
+- 'SEO: schema.org + canonical на всех страницах'
+- 'Изображения: пресеты AVIF/WEBP; заданы width/height/aspect-ratio; нулевой CLS'
+владелец: ai/agent
+приоритет: высокий
+создано: '2025-12-05T12:59:04.847670Z'

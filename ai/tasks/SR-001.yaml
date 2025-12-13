@@ -1,0 +1,25 @@
+эпик:
+  id: E5
+  название: Поиск (серверный)
+задача:
+  id: SR-001
+  заголовок: Схема Typesense и индексатор
+цель: Схема Typesense и индексатор для эпика «Поиск (серверный)»
+контекстные_файлы:
+- docs/tz_context.md
+- docs/requirements.md
+результаты:
+- apps/search/schema.json
+- apps/jobs/src/indexers/typesense.ts
+критерии_приёмки:
+- 'Поля: title, excerpt, content, category, tags, author, published_at'
+- Запросы выполняются только на сервере
+ограничения:
+- Mobile-first; на контентных страницах отсутствует глобальный SPA
+- 'Клиентский JS только в островках при необходимости (hydrate: client:visible/idle)'
+- Рекламный компонент AdSlot провайдер-независим; скрипты грузятся лениво
+- 'SEO: schema.org + canonical на всех страницах'
+- 'Изображения: пресеты AVIF/WEBP; заданы width/height/aspect-ratio; нулевой CLS'
+владелец: ai/agent
+приоритет: высокий
+создано: '2025-12-05T12:59:04.858334Z'

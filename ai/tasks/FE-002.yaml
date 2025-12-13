@@ -1,0 +1,29 @@
+эпик:
+  id: E1
+  название: Дизайн‑система и токены
+задача:
+  id: FE-002
+  заголовок: Компоненты карточек A/B/C + лэйаут статьи (Astro)
+цель: Компоненты карточек A/B/C + лэйаут статьи (Astro) для эпика «Дизайн‑система
+  и токены»
+контекстные_файлы:
+- docs/tz_context.md
+- docs/requirements.md
+результаты:
+- apps/web/src/components/CardA.astro
+- apps/web/src/components/CardB.astro
+- apps/web/src/components/CardC.astro
+- apps/web/src/layouts/Article.astro
+критерии_приёмки:
+- В карточках нет клиентского JS
+- Изображения со srcset и aspect-ratio; нулевой CLS
+- Ширина контента статьи ~720px на desktop
+ограничения:
+- Mobile-first; на контентных страницах отсутствует глобальный SPA
+- 'Клиентский JS только в островках при необходимости (hydrate: client:visible/idle)'
+- Рекламный компонент AdSlot провайдер-независим; скрипты грузятся лениво
+- 'SEO: schema.org + canonical на всех страницах'
+- 'Изображения: пресеты AVIF/WEBP; заданы width/height/aspect-ratio; нулевой CLS'
+владелец: ai/agent
+приоритет: высокий
+создано: '2025-12-05T12:59:04.840434Z'

@@ -1,0 +1,26 @@
+{
+  "name": "jobs",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Background workers for the fashion news project",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "dev": "nodemon --watch src --exec ts-node src/index.ts",
+    "import:feeds": "ts-node src/importFeeds.ts"
+  },
+  "dependencies": {
+    "bullmq": "^5.0.0",
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3",
+    "typesense": "^1.7.2",
+    "fast-xml-parser": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/pg": "^8.10.9",
+    "nodemon": "^3.0.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
+  }
+}
