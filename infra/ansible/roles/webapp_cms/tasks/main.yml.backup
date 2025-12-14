@@ -1,0 +1,152 @@
+---
+- name: Ensure psycopg2 is installed for Postgres modules
+  become: true
+  ansible.builtin.apt:
+    name: python3-psycopg2
+    state: present
+    update_cache: true
+
+- name: Ensure psql client is installed
+  become: true
+  ansible.builtin.apt:
+    name: postgresql-client
+    state: present
+    update_cache: true
+
+- name: Install Redis server
+  become: true
+  ansible.builtin.apt:
+    name: redis-server
+    state: present
+    update_cache: true
+
+- name: Ensure Redis service is started and enabled
+  become: true
+  ansible.builtin.systemd:
+    name: redis-server
+    state: started
+    enabled: true
+
+- name: Wait for PostgreSQL to be ready
+  become: true
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 5432
+    delay: 0
+    timeout: 60
+  changed_when: false
+
+- name: Wait for Redis
+  become: true
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 6379
+    timeout: 60
+  changed_when: false
+
+- name: Ensure DB exists
+  become: true
+  become_user: postgres
+  community.postgresql.postgresql_db:
+    name: "{{ postgres_db_name }}"
+    state: present
+
+- name: Ensure app user exists
+  become: true
+  become_user: postgres
+  community.postgresql.postgresql_user:
+    name: "payload"
+    password: "password"
+    db: "{{ postgres_db_name }}"
+    priv: "ALL"
+    state: present
+
+- name: Ensure CMS media directory exists
+  ansible.builtin.file:
+    path: "{{ cms_media_dir }}"
+    state: directory
+    owner: "{{ service_user_cms }}"
+    group: "{{ webapp_group }}"
+    mode: "0755"
+  become: true
+
+- name: Install dependencies for Payload CMS (retry)
+  become: true
+  become_user: "{{ service_user_cms }}"
+  ansible.builtin.command: npm ci
+  args:
+    chdir: "{{ webapp_cms_dir }}"
+  register: npm_ci
+  retries: 3
+  delay: 10
+  until: npm_ci.rc == 0
+  environment:
+    HOME: "/home/{{ service_user_cms }}"
+
+- name: Build Payload CMS
+  ansible.builtin.command: npm run build
+  args:
+    chdir: "{{ webapp_cms_dir }}"
+  environment:
+    NODE_ENV: production
+  become: true
+  become_user: "{{ service_user_cms }}"
+
+- name: Create payload_migrations table manually
+  become: true
+  become_user: postgres
+  ansible.builtin.shell: |
+    psql -v ON_ERROR_STOP=1 -d "{{ postgres_db_name }}" <<'SQL'
+    DO $$
+    BEGIN
+      CREATE TABLE IF NOT EXISTS payload_migrations (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        batch INTEGER,
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_payload_migrations_name ON payload_migrations(name);
+    END $$;
+    SQL
+  args:
+    executable: /bin/bash
+  register: payload_migrations_sql
+  changed_when: "'CREATE TABLE' in payload_migrations_sql.stdout or 'CREATE INDEX' in payload_migrations_sql.stdout"
+
+- name: Run Payload migrations
+  ansible.builtin.command: npm run payload migrate
+  args:
+    chdir: "{{ webapp_cms_dir }}"
+  environment:
+    NODE_ENV: production
+    DATABASE_URI: postgres://payload:password@localhost:5432/payload
+    REDIS_URL: redis://localhost:6379
+    PAYLOAD_SECRET: change-me-long-and-random
+  become: true
+  become_user: "{{ service_user_cms }}"
+
+- name: Test media directory permissions
+  become: true
+  become_user: "{{ service_user_cms }}"
+  ansible.builtin.file:
+    path: "{{ cms_media_dir }}/.probe"
+    state: touch
+  notify: Cleanup probe file
+
+- name: Deploy CMS systemd unit
+  ansible.builtin.template:
+    src: payload-backend.service.j2
+    dest: "/etc/systemd/system/{{ cms_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+
+- name: Ensure CMS service is enabled and restarted
+  ansible.builtin.systemd:
+    name: "{{ cms_service_name }}"
+    state: restarted
+    enabled: true
+    daemon_reload: true
+  become: true

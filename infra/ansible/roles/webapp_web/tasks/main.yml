@@ -1,0 +1,33 @@
+---
+- name: Install dependencies for Astro web
+  ansible.builtin.command: npm ci
+  args:
+    chdir: "{{ webapp_web_dir }}"
+  become: true
+  become_user: "{{ service_user_web }}"
+
+- name: Build Astro web
+  ansible.builtin.command: npm run build
+  args:
+    chdir: "{{ webapp_web_dir }}"
+  environment:
+    NODE_ENV: production
+  become: true
+  become_user: "{{ service_user_web }}"
+
+- name: Deploy Astro systemd unit
+  ansible.builtin.template:
+    src: astro-frontend.service.j2
+    dest: "/etc/systemd/system/{{ astro_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+
+- name: Ensure Astro service is enabled and restarted
+  ansible.builtin.systemd:
+    name: "{{ astro_service_name }}"
+    state: restarted
+    enabled: true
+    daemon_reload: true
+  become: true

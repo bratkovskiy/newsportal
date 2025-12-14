@@ -1,0 +1,23 @@
+---
+# Simple approach: copy local .env file to server
+- name: Deploy production .env file
+  ansible.builtin.copy:
+    src: prod.env
+    dest: "/opt/webapp/.env"
+    owner: root
+    group: root
+    mode: "0600"
+  become: true
+  no_log: true
+
+- name: Pull latest Docker images
+  ansible.builtin.command:
+    cmd: docker compose pull
+    chdir: "/opt/webapp"
+  become: true
+
+- name: Restart services with Docker Compose
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "/opt/webapp"
+  become: true

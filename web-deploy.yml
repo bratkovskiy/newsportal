@@ -1,0 +1,15 @@
+---
+- hosts: webapp
+  become: true
+  gather_facts: false
+  vars:
+    service_user_web: "web"
+    webapp_web_dir: "/opt/webapp/app/apps/web"
+    astro_service_name: "astro-frontend"
+    webapp_group: "webapp"
+    webapp_web_env_file: "/etc/webapp/web.env"
+    astro_port: 4000
+  tasks:
+    - name: webapp_web static import
+      ansible.builtin.import_role:
+        name: webapp_web

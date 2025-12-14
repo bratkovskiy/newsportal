@@ -1,0 +1,30 @@
+---
+- hosts: web
+  become: true
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  pre_tasks:
+    - name: Wait for SSH to become available
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[inventory_hostname].ansible_host | default(inventory_hostname) }}"
+        port: 22
+        state: started
+        delay: 5
+        timeout: 180
+      delegate_to: localhost
+      become: false
+
+    - name: Gather facts
+      ansible.builtin.setup:
+  roles:
+    - postgres
+    - common
+    - nodejs
+    - docker
+    - tailscale
+    - webapp_code
+    - webapp_secrets
+    - webapp_web
+    - webapp_cms
+    - nginx

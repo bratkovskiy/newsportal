@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ENV_FILE="${ROOT_DIR}/.env.local"
+
+if [[ -f "${ENV_FILE}" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "${ENV_FILE}"
+  set +a
+fi
+
+ANS_DIR="${ROOT_DIR}/infra/ansible"
+KEY_PATH="${ANSIBLE_SSH_KEY:-$HOME/.ssh/id_ed25519}"
+
+: "${VAULT_TOKEN:?Set VAULT_TOKEN before running (export or put in .env.local)}"
+export VAULT_ADDR="${VAULT_ADDR:-https://vault.your-host:8200}"
+export VAULT_SKIP_VERIFY="${VAULT_SKIP_VERIFY:-true}"
+
+# ensure SSH key is available for Ansible git clone
+EVAL_RESULT="$(ssh-agent -s)"
+eval "${EVAL_RESULT}" >/dev/null
+trap 'ssh-agent -k >/dev/null' EXIT
+ssh-add -q "${KEY_PATH}"
+
+cd "${ANS_DIR}"
+ansible-galaxy collection install community.hashi_vault >/dev/null
+ansible-playbook "$@" site.yml

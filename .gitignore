@@ -21,6 +21,15 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
+
+# Terraform local vars
+*.tfvars
+!**/*.tfvars.example
+
+# Local infra helper scripts
+infra/scripts/*.sh
 
 # Editor / OS
 .DS_Store

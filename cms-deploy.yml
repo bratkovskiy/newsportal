@@ -1,0 +1,16 @@
+---
+- hosts: webapp
+  become: true
+  gather_facts: false
+  vars:
+    service_user_cms: "cms"
+    webapp_cms_dir: "/opt/webapp/app/apps/cms"
+    webapp_group: "webapp"
+    postgres_db_name: "payload"
+    payload_secret: "change-me-long-and-random"
+    cms_service_name: "payload-backend"
+    cms_media_dir: "/opt/webapp/app/apps/cms/src/media"
+  tasks:
+    - name: webapp_cms static import
+      ansible.builtin.import_role:
+        name: webapp_cms

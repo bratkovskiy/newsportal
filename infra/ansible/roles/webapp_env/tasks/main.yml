@@ -1,0 +1,51 @@
+---
+- name: Create envs directory
+  ansible.builtin.file:
+    path: "/etc/webapp/envs"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Create web env file
+  ansible.builtin.copy:
+    dest: "/opt/webapp/app/.env"
+    content: |
+      NODE_ENV=production
+      PORT=3000
+      POSTGRES_URL=postgresql://payload:password@localhost:5432/payload
+      REDIS_URL=redis://localhost:6379
+      PUBLIC_PLACEHOLDER_URL=http://localhost:3000/api/media/file/placeholder-1.jpg
+    owner: web
+    group: webapp
+    mode: "0644"
+  become: true
+
+- name: Create cms env file
+  ansible.builtin.copy:
+    dest: "/etc/webapp/envs/cms.env"
+    content: |
+      NODE_ENV=production
+      PORT=3000
+      POSTGRES_URL=postgresql://payload:password@localhost:5432/payload
+      REDIS_URL=redis://localhost:6379
+      PUBLIC_PLACEHOLDER_URL=http://localhost:3000/api/media/file/placeholder-1.jpg
+    owner: root
+    group: root
+    mode: "0600"
+  become: true
+
+- name: Create web service env file
+  ansible.builtin.copy:
+    dest: "/etc/webapp/envs/web.env"
+    content: |
+      NODE_ENV=production
+      PORT=4321
+      POSTGRES_URL=postgresql://payload:password@localhost:5432/payload
+      REDIS_URL=redis://localhost:6379
+      PUBLIC_PLACEHOLDER_URL=http://localhost:3000/api/media/file/placeholder-1.jpg
+    owner: root
+    group: root
+    mode: "0600"
+  become: true

@@ -1,0 +1,11 @@
+project_id       = "your-gcp-project-id"
+region           = "europe-west3"
+zone             = "europe-west3-c"
+instance_name    = "webapp-vm"
+ssh_user         = "deploy"
+ssh_public_key   = "ssh-ed25519 AAAA...your_public_key"
+environment      = "prod"
+additional_tags  = ["webapp"]
+extra_labels = {
+  owner = "your-name"
+}

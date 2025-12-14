@@ -1,0 +1,19 @@
+[Unit]
+Description=Payload CMS
+After=network.target postgresql.service redis-server.service
+
+[Service]
+User={{ service_user_cms }}
+WorkingDirectory={{ webapp_cms_dir }}
+# Используй либо EnvironmentFile=.env, либо переменные напрямую
+# EnvironmentFile={{ webapp_cms_dir }}/.env
+Environment=NODE_ENV=production
+Environment=DATABASE_URI=postgres://payload:password@localhost:5432/{{ postgres_db_name }}
+Environment=REDIS_URL=redis://localhost:6379
+Environment=PAYLOAD_SECRET={{ payload_secret | default('change-me-long-and-random') }}
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

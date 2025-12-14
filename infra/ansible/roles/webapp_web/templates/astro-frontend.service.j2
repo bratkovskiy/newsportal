@@ -1,0 +1,19 @@
+[Unit]
+Description=Astro SSR Frontend
+After=network.target
+
+[Service]
+Type=simple
+User={{ service_user_web }}
+Group={{ webapp_group }}
+WorkingDirectory={{ webapp_web_dir }}
+EnvironmentFile={{ webapp_web_env_file }}
+Environment=NODE_ENV=production
+Environment=HOST=0.0.0.0
+Environment=PORT={{ astro_port }}
+ExecStart=/usr/bin/node ./dist/server/entry.mjs
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

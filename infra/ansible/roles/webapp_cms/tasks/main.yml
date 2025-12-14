@@ -1,0 +1,328 @@
+---
+- name: Ensure ACL tools are installed (required for become_user temp dir ACLs)
+  become: true
+  ansible.builtin.apt:
+    name: acl
+    state: present
+    update_cache: true
+
+# Предусловия (Debian/Ubuntu). Для других ОС добавь when: ansible_os_family == 'Debian'
+- name: Ensure deps (psycopg2, psql client, redis)
+  become: true
+  ansible.builtin.apt:
+    name:
+      - python3-psycopg2
+      - postgresql-client
+      - redis-server
+    state: present
+    update_cache: true
+
+- name: Ensure Redis service is started and enabled
+  become: true
+  ansible.builtin.systemd:
+    name: redis-server
+    state: started
+    enabled: true
+
+# Ожидаем готовности сервисов (не помечаем changed)
+- name: Wait for PostgreSQL to be ready
+  become: true
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 5432
+    timeout: 60
+  changed_when: false
+
+- name: Wait for Redis
+  become: true
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 6379
+    timeout: 60
+  changed_when: false
+
+# ==== DB и пользователь через psql, без PG-модулей ====
+
+- name: Ensure database exists (idempotent)
+  become: true
+  ansible.builtin.shell: |
+    sudo -u postgres bash -lc '
+      if ! psql -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''{{ postgres_db_name }}'\''" | grep -q 1; then
+        createdb -E UTF8 "{{ postgres_db_name }}"
+      fi
+    '
+  args: { executable: /bin/bash }
+  changed_when: false
+
+- name: Ensure role payload exists (idempotent)
+  become: true
+  ansible.builtin.shell: |
+    sudo -u postgres psql -v ON_ERROR_STOP=1 -d "{{ postgres_db_name }}" <<'SQL'
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'payload') THEN
+        CREATE ROLE payload LOGIN PASSWORD 'password';
+      END IF;
+    END $$;
+    SQL
+  args: { executable: /bin/bash }
+  changed_when: false
+
+- name: Grant DB CONNECT to payload
+  become: true
+  ansible.builtin.shell: |
+    sudo -u postgres psql -v ON_ERROR_STOP=1 -d postgres -c "GRANT CONNECT ON DATABASE {{ postgres_db_name }} TO payload;"
+  args: { executable: /bin/bash }
+  changed_when: false
+
+- name: Grants on schema/tables/sequences for payload
+  become: true
+  ansible.builtin.shell: |
+    sudo -u postgres psql -v ON_ERROR_STOP=1 -d "{{ postgres_db_name }}" <<'SQL'
+    -- на схему public нужны USAGE, CREATE
+    GRANT USAGE, CREATE ON SCHEMA public TO payload;
+
+    -- текущие объекты:
+    GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA public TO payload;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO payload;
+
+    -- дефолтные привилегии для будущих объектов, которые создаст payload:
+    ALTER DEFAULT PRIVILEGES FOR ROLE payload IN SCHEMA public GRANT ALL ON TABLES    TO payload;
+    ALTER DEFAULT PRIVILEGES FOR ROLE payload IN SCHEMA public GRANT ALL ON SEQUENCES TO payload;
+    SQL
+  args: { executable: /bin/bash }
+  changed_when: false
+
+# Медиа-папка и проверка прав записи
+- name: Ensure CMS media directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ cms_media_dir }}"
+    state: directory
+    owner: "{{ service_user_cms }}"
+    group: "{{ webapp_group }}"
+    mode: "0755"
+
+- name: Test media directory permissions
+  become: true
+  ansible.builtin.shell: |
+    sudo -u {{ service_user_cms }} touch {{ cms_media_dir }}/.probe
+  args: { executable: /bin/bash }
+  notify: Cleanup probe file
+
+# Node deps + build (с ретраями)
+- name: Install dependencies for Payload CMS (retry)
+  become: true
+  ansible.builtin.shell: |
+    sudo -u {{ service_user_cms }} bash -lc 'cd {{ webapp_cms_dir }} && npm ci'
+  args:
+    executable: /bin/bash
+  register: npm_ci
+  retries: 3
+  delay: 10
+  until: npm_ci.rc == 0
+  environment:
+    HOME: "/home/{{ service_user_cms }}"
+    PATH: "/usr/local/bin:/usr/bin:/bin"
+
+- name: Build Payload CMS
+  become: true
+  ansible.builtin.shell: |
+    sudo -u {{ service_user_cms }} bash -lc 'cd {{ webapp_cms_dir }} && NODE_ENV=production npm run build'
+  args:
+    executable: /bin/bash
+  environment:
+    HOME: "/home/{{ service_user_cms }}"
+    PATH: "/usr/local/bin:/usr/bin:/bin"
+
+# Таблица миграций (идемпотентно)
+- name: Create payload_migrations table if missing
+  become: true
+  ansible.builtin.shell: |
+    sudo -u postgres psql -v ON_ERROR_STOP=1 -d "{{ postgres_db_name }}" <<'SQL'
+    DO $$
+    BEGIN
+      CREATE TABLE IF NOT EXISTS payload_migrations (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        batch INTEGER,
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_payload_migrations_name ON payload_migrations(name);
+    END $$;
+    SQL
+  args: { executable: /bin/bash }
+  register: payload_migrations_sql
+  changed_when: "'CREATE TABLE' in payload_migrations_sql.stdout or 'CREATE INDEX' in payload_migrations_sql.stdout"
+
+# Явный GRANT на конкретную таблицу (закрываем твою 42501)
+- name: Grant privileges on payload_migrations to payload
+  become: true
+  ansible.builtin.shell: |
+    sudo -u postgres psql -v ON_ERROR_STOP=1 -d "{{ postgres_db_name }}" <<'SQL'
+    GRANT ALL PRIVILEGES ON TABLE payload_migrations TO payload;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO payload;
+    SQL
+  args: { executable: /bin/bash }
+  register: grant_privs
+  changed_when: "'GRANT' in grant_privs.stdout"
+
+- name: Set owner of payload_migrations to payload
+  become: true
+  ansible.builtin.shell: |
+    sudo -u postgres psql -v ON_ERROR_STOP=1 -d "{{ postgres_db_name }}" <<'SQL'
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                 WHERE c.relname='payload_migrations' AND n.nspname='public') THEN
+        ALTER TABLE public.payload_migrations OWNER TO payload;
+        -- на всякий случай для последовательности:
+        DO $do$
+        DECLARE seqname text;
+        BEGIN
+          SELECT pg_get_serial_sequence('public.payload_migrations','id') INTO seqname;
+          IF seqname IS NOT NULL THEN
+            EXECUTE format('ALTER SEQUENCE %s OWNER TO payload', seqname);
+          END IF;
+        END
+        $do$;
+      END IF;
+    END $$;
+    SQL
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+# Миграции Payload
+- name: Ensure CMS .env exists
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ webapp_cms_dir }}/.env"
+    owner: "{{ service_user_cms }}"
+    group: "{{ webapp_group }}"
+    mode: "0644"
+    content: |
+      PAYLOAD_SECRET={{ payload_secret | default('change-me-long-and-random') }}
+      DATABASE_URI=postgres://payload:password@localhost:5432/{{ postgres_db_name }}
+      REDIS_URL=redis://localhost:6379
+      NODE_ENV=production
+
+- name: Create categories table if missing (base migration)
+  become: true
+  ansible.builtin.shell: |
+    sudo -u postgres psql -v ON_ERROR_STOP=1 -d "{{ postgres_db_name }}" <<'SQL'
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                   WHERE c.relname='categories' AND n.nspname='public') THEN
+        CREATE TABLE categories (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          slug VARCHAR(255),
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS categories_slug_unique ON categories(slug);
+        CREATE INDEX IF NOT EXISTS categories_name_idx ON categories(name);
+        ALTER TABLE categories OWNER TO payload;
+        ALTER SEQUENCE categories_id_seq OWNER TO payload;
+      ELSE
+        -- Если таблица уже существует, меняем владельца
+        ALTER TABLE categories OWNER TO payload;
+        ALTER SEQUENCE categories_id_seq OWNER TO payload;
+      END IF;
+    END $$;
+    SQL
+  args: { executable: /bin/bash }
+  register: sql
+  changed_when: "'CREATE TABLE' in sql.stdout or 'ALTER TABLE' in sql.stdout"
+
+- name: Create articles table if missing (base migration)
+  become: true
+  ansible.builtin.shell: |
+    sudo -u postgres psql -v ON_ERROR_STOP=1 -d "{{ postgres_db_name }}" <<'SQL'
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                   WHERE c.relname='articles' AND n.nspname='public') THEN
+        CREATE TABLE articles (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          slug VARCHAR(255),
+          content TEXT,
+          view_count INTEGER DEFAULT 0,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS articles_slug_unique ON articles(slug);
+        CREATE INDEX IF NOT EXISTS articles_title_idx ON articles(title);
+        CREATE INDEX IF NOT EXISTS articles_view_count_idx ON articles(view_count DESC);
+        ALTER TABLE articles OWNER TO payload;
+        ALTER SEQUENCE articles_id_seq OWNER TO payload;
+      ELSE
+        -- Если таблица уже существует, меняем владельца и создаем индекс если нужно
+        ALTER TABLE articles OWNER TO payload;
+        ALTER SEQUENCE articles_id_seq OWNER TO payload;
+        CREATE INDEX IF NOT EXISTS articles_view_count_idx ON articles(view_count DESC);
+      END IF;
+    END $$;
+    SQL
+  args: { executable: /bin/bash }
+  register: sql_articles
+  changed_when: "'CREATE TABLE' in sql_articles.stdout or 'ALTER TABLE' in sql_articles.stdout"
+
+- name: Create tags table if missing (base migration)
+  become: true
+  ansible.builtin.shell: |
+    sudo -u postgres psql -v ON_ERROR_STOP=1 -d "{{ postgres_db_name }}" <<'SQL'
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                   WHERE c.relname='tags' AND n.nspname='public') THEN
+        CREATE TABLE tags (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          slug VARCHAR(255),
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS tags_slug_unique ON tags(slug);
+        CREATE INDEX IF NOT EXISTS tags_name_idx ON tags(name);
+        ALTER TABLE tags OWNER TO payload;
+        ALTER SEQUENCE tags_id_seq OWNER TO payload;
+      ELSE
+        -- Если таблица уже существует, меняем владельца
+        ALTER TABLE tags OWNER TO payload;
+        ALTER SEQUENCE tags_id_seq OWNER TO payload;
+      END IF;
+    END $$;
+    SQL
+  args: { executable: /bin/bash }
+  register: sql_tags
+  changed_when: "'CREATE TABLE' in sql_tags.stdout or 'ALTER TABLE' in sql_tags.stdout"
+
+- name: Run Payload migrations
+  become: true
+  ansible.builtin.shell: |
+    sudo -u {{ service_user_cms }} bash -lc 'cd {{ webapp_cms_dir }} && npm run payload migrate'
+  args:
+    executable: /bin/bash
+
+# Деплой systemd-юнита
+- name: Deploy CMS systemd unit
+  become: true
+  ansible.builtin.template:
+    src: payload-backend.service.j2
+    dest: "/etc/systemd/system/{{ cms_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure CMS service is enabled and restarted
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ cms_service_name }}"
+    state: restarted
+    enabled: true
+    daemon_reload: true
