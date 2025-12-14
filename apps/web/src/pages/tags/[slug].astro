@@ -115,8 +115,16 @@ try {
 
 // Generate SEO meta tags
 const articleCount = articles.length;
-const metaTitle = tag.metaTitle || generateTagTitle(tag.name, articleCount);
-const metaDescription = tag.metaDescription || generateTagDescription(tag.name, articleCount);
+let metaTitle = tag.metaTitle as string | undefined;
+let metaDescription = tag.metaDescription as string | undefined;
+
+if (!metaTitle) {
+  metaTitle = await generateTagTitle(tag.name, articleCount);
+}
+
+if (!metaDescription) {
+  metaDescription = await generateTagDescription(tag.name, articleCount);
+}
 ---
 
 <BaseLayout title={metaTitle} description={metaDescription}>

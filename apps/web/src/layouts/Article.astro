@@ -21,8 +21,8 @@ const dateLocale = locale === 'en' ? 'en-US' : 'ru-RU';
 const formattedDate = new Intl.DateTimeFormat(dateLocale, { dateStyle: 'long' }).format(publishedDate);
 
 // Generate SEO meta tags
-const metaTitle = generateArticleTitle(title);
-const metaDescription = generateArticleDescription(excerpt);
+const metaTitle = await generateArticleTitle(title);
+const metaDescription = await generateArticleDescription(excerpt);
 ---
 
 <BaseLayout title={metaTitle} description={metaDescription}>

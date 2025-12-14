@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import MainColumns from '../layouts/MainColumns.astro';
-import { generateSearchTitle, generateSearchDescription, SITE_CONFIG } from '../config/seo';
+import { generateSearchTitle, generateSearchDescription, getBrandName } from '../config/seo';
 import CardC from '../components/CardC.astro';
 
 // В SSR используем CMS_URL (для Docker - http://cms:3000)
@@ -63,12 +63,13 @@ if (query.length >= 2) {
 
 // Generate SEO meta tags
 const resultCount = searchResults.length;
+const brandName = await getBrandName();
 const metaTitle = query
-  ? generateSearchTitle(query, resultCount)
-  : `Поиск по сайту | ${SITE_CONFIG.brandName}`;
+  ? await generateSearchTitle(query, resultCount, brandName)
+  : `Поиск по сайту | ${brandName}`;
 const metaDescription = query
-  ? generateSearchDescription(query, resultCount)
-  : `Поиск новостей и статей на ${SITE_CONFIG.brandName}.`;
+  ? await generateSearchDescription(query, resultCount, brandName)
+  : `Поиск новостей и статей на ${brandName}.`;
 ---
 
 <BaseLayout title={metaTitle} description={metaDescription}>

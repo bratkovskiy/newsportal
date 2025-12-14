@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import CardA from '../components/CardA.astro';
 import CardFeed from '../components/CardFeed.astro';
 import MainColumns from '../layouts/MainColumns.astro';
-import { generateHomeTitle, generateHomeDescription } from '../config/seo';
+import { generateHomeTitle, generateHomeDescription, getBrandName } from '../config/seo';
 
 // В SSR используем CMS_URL (для Docker - http://cms:3000)
 const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
@@ -515,8 +515,9 @@ const labelHomeTags = currentLanguage === 'en'
 
 // Generate SEO meta tags
 const articleCount = articles.length;
-const metaTitle = generateHomeTitle(articleCount);
-const metaDescription = generateHomeDescription(articleCount);
+const brandName = await getBrandName();
+const metaTitle = await generateHomeTitle(articleCount, brandName);
+const metaDescription = await generateHomeDescription(articleCount, brandName);
 ---
 
 <BaseLayout title={metaTitle} description={metaDescription}>

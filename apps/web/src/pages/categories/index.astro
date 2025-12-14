@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import MainColumns from '../../layouts/MainColumns.astro';
+import { getBrandName } from '../../config/seo';
 
 const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
 
@@ -22,8 +23,9 @@ try {
   console.error('Error fetching categories:', error);
 }
 
-const metaTitle = 'Все категории - LADY.NEWS';
-const metaDescription = 'Полный список категорий на LADY.NEWS';
+const brandName = await getBrandName();
+const metaTitle = `Все категории - ${brandName}`;
+const metaDescription = `Полный список категорий на ${brandName}`;
 ---
 
 <BaseLayout title={metaTitle} description={metaDescription}>

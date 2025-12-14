@@ -7,20 +7,39 @@ export const SITE_CONFIG = {
   baseUrl: import.meta.env.PUBLIC_SITE_URL || 'https://fashionsite.com',
 };
 
+const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
+
+export async function getBrandName(): Promise<string> {
+  try {
+    const res = await fetch(`${CMS_URL}/api/globals/site-settings`);
+    if (res.ok) {
+      const data = await res.json();
+      const raw = (data as any).siteName || SITE_CONFIG.brandName;
+      return String(raw).replace(/<[^>]*>/g, '');
+    }
+  } catch {
+    // ignore errors and use fallback brand name
+  }
+
+  return SITE_CONFIG.brandName;
+}
+
 /**
  * Generate meta title for home page
  * @param articleCount - number of articles
  */
-export function generateHomeTitle(articleCount: number): string {
-  return `Последние новости сегодня | ${SITE_CONFIG.brandName}`;
+export async function generateHomeTitle(articleCount: number, brandName?: string): Promise<string> {
+  const brand = brandName ?? (await getBrandName());
+  return `Последние новости сегодня | ${brand}`;
 }
 
 /**
  * Generate meta description for home page
  * @param articleCount - number of articles
  */
-export function generateHomeDescription(articleCount: number): string {
-  return `Актуальные события, аналитика и топ-материалы: на ${SITE_CONFIG.brandName}.`;
+export async function generateHomeDescription(articleCount: number, brandName?: string): Promise<string> {
+  const brand = brandName ?? (await getBrandName());
+  return `Актуальные события, аналитика и топ-материалы: на ${brand}.`;
 }
 
 /**
@@ -28,8 +47,13 @@ export function generateHomeDescription(articleCount: number): string {
  * @param categoryName - name of the category
  * @param articleCount - number of articles in the category
  */
-export function generateCategoryTitle(categoryName: string, articleCount: number): string {
-  return `${categoryName} — новости и статьи | ${SITE_CONFIG.brandName}`;
+export async function generateCategoryTitle(
+  categoryName: string,
+  articleCount: number,
+  brandName?: string,
+): Promise<string> {
+  const brand = brandName ?? (await getBrandName());
+  return `${categoryName} — новости и статьи | ${brand}`;
 }
 
 /**
@@ -37,8 +61,13 @@ export function generateCategoryTitle(categoryName: string, articleCount: number
  * @param categoryName - name of the category
  * @param articleCount - number of articles in the category
  */
-export function generateCategoryDescription(categoryName: string, articleCount: number): string {
-  return `${articleCount} свежих материалов по теме «${categoryName}»: события, мнения, хроника на ${SITE_CONFIG.brandName}.`;
+export async function generateCategoryDescription(
+  categoryName: string,
+  articleCount: number,
+  brandName?: string,
+): Promise<string> {
+  const brand = brandName ?? (await getBrandName());
+  return `${articleCount} свежих материалов по теме «${categoryName}»: события, мнения, хроника на ${brand}.`;
 }
 
 /**
@@ -46,8 +75,9 @@ export function generateCategoryDescription(categoryName: string, articleCount: 
  * @param tagName - name of the tag
  * @param articleCount - number of articles with the tag
  */
-export function generateTagTitle(tagName: string, articleCount: number): string {
-  return `${tagName} — материалы, новости и обзоры | ${SITE_CONFIG.brandName}`;
+export async function generateTagTitle(tagName: string, articleCount: number, brandName?: string): Promise<string> {
+  const brand = brandName ?? (await getBrandName());
+  return `${tagName} — материалы, новости и обзоры | ${brand}`;
 }
 
 /**
@@ -55,8 +85,9 @@ export function generateTagTitle(tagName: string, articleCount: number): string 
  * @param tagName - name of the tag
  * @param articleCount - number of articles with the tag
  */
-export function generateTagDescription(tagName: string, articleCount: number): string {
-  return `Подборка материалов по тегу «${tagName}»: ${articleCount} новостей, аналитика, фото и видео на ${SITE_CONFIG.brandName}.`;
+export async function generateTagDescription(tagName: string, articleCount: number, brandName?: string): Promise<string> {
+  const brand = brandName ?? (await getBrandName());
+  return `Подборка материалов по тегу «${tagName}»: ${articleCount} новостей, аналитика, фото и видео на ${brand}.`;
 }
 
 /**
@@ -64,8 +95,13 @@ export function generateTagDescription(tagName: string, articleCount: number): s
  * @param query - search query
  * @param resultCount - number of search results
  */
-export function generateSearchTitle(query: string, resultCount: number): string {
-  return `Поиск «${query}» — ${resultCount} результатов | ${SITE_CONFIG.brandName}`;
+export async function generateSearchTitle(
+  query: string,
+  resultCount: number,
+  brandName?: string,
+): Promise<string> {
+  const brand = brandName ?? (await getBrandName());
+  return `Поиск «${query}» — ${resultCount} результатов | ${brand}`;
 }
 
 /**
@@ -73,16 +109,22 @@ export function generateSearchTitle(query: string, resultCount: number): string 
  * @param query - search query
  * @param resultCount - number of search results
  */
-export function generateSearchDescription(query: string, resultCount: number): string {
-  return `Найдено ${resultCount} материалов по запросу «${query}»: новости, статьи, мнения на ${SITE_CONFIG.brandName}.`;
+export async function generateSearchDescription(
+  query: string,
+  resultCount: number,
+  brandName?: string,
+): Promise<string> {
+  const brand = brandName ?? (await getBrandName());
+  return `Найдено ${resultCount} материалов по запросу «${query}»: новости, статьи, мнения на ${brand}.`;
 }
 
 /**
  * Generate meta title for article page
  * @param articleTitle - title of the article
  */
-export function generateArticleTitle(articleTitle: string): string {
-  return `${articleTitle} | ${SITE_CONFIG.brandName}`;
+export async function generateArticleTitle(articleTitle: string, brandName?: string): Promise<string> {
+  const brand = brandName ?? (await getBrandName());
+  return `${articleTitle} | ${brand}`;
 }
 
 /**
@@ -90,9 +132,10 @@ export function generateArticleTitle(articleTitle: string): string {
  * Truncates excerpt to first period or 150-160 chars with soft truncation
  * @param excerpt - article excerpt
  */
-export function generateArticleDescription(excerpt: string): string {
+export async function generateArticleDescription(excerpt: string, brandName?: string): Promise<string> {
+  const brand = brandName ?? (await getBrandName());
   if (!excerpt) {
-    return `Подробности — на ${SITE_CONFIG.brandName}.`;
+    return `Подробности — на ${brand}.`;
   }
 
   // Ищем первую точку
@@ -101,7 +144,7 @@ export function generateArticleDescription(excerpt: string): string {
   // Если точка найдена в пределах разумного (до 160 символов), обрезаем по ней
   if (firstPeriodIndex > 0 && firstPeriodIndex <= 160) {
     const textToFirstPeriod = excerpt.substring(0, firstPeriodIndex + 1).trim();
-    return `${textToFirstPeriod} Подробности — на ${SITE_CONFIG.brandName}.`;
+    return `${textToFirstPeriod} Подробности — на ${brand}.`;
   }
   
   // Иначе обрезаем до 150-160 символов с мягким обрезанием (по пробелу)
@@ -111,8 +154,8 @@ export function generateArticleDescription(excerpt: string): string {
     const result = excerpt.trim();
     // Добавляем точку, если её нет
     return result.endsWith('.') || result.endsWith('!') || result.endsWith('?')
-      ? `${result} Подробности — на ${SITE_CONFIG.brandName}.`
-      : `${result}. Подробности — на ${SITE_CONFIG.brandName}.`;
+      ? `${result} Подробности — на ${brand}.`
+      : `${result}. Подробности — на ${brand}.`;
   }
   
   // Мягкое обрезание: ищем последний пробел до maxLength
@@ -127,5 +170,5 @@ export function generateArticleDescription(excerpt: string): string {
   // Убираем возможные знаки препинания в конце обрезанного текста
   truncated = truncated.replace(/[,;:\s]+$/, '').trim();
   
-  return `${truncated}... Подробности — на ${SITE_CONFIG.brandName}.`;
+  return `${truncated}... Подробности — на ${brand}.`;
 }
