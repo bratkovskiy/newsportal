@@ -515,7 +515,7 @@ function selectReadMoreForArticlePage(
 }
 
 // Получаем теги статьи
-const tags = Array.isArray(payloadArticle?.tags)
+const rawTags = Array.isArray(payloadArticle?.tags)
   ? payloadArticle.tags
       .filter((tag: any) => tag && typeof tag === 'object' && tag.name && tag.slug)
       .map((tag: any) => ({
@@ -523,6 +523,18 @@ const tags = Array.isArray(payloadArticle?.tags)
         slug: tag.slug,
       }))
   : [];
+
+// Для цепочки навигации используем не более трёх тегов, отсортированных по алфавиту
+const tags = rawTags
+  .slice()
+  .sort((a, b) => {
+    const aName = String(a.name || '').toLocaleLowerCase('ru-RU');
+    const bName = String(b.name || '').toLocaleLowerCase('ru-RU');
+    if (aName < bName) return -1;
+    if (aName > bName) return 1;
+    return 0;
+  })
+  .slice(0, 3);
 
 let relatedArticles: RelatedItem[] = [];
 
