@@ -576,6 +576,16 @@ const Articles: CollectionConfig = {
       ],
     },
     {
+      name: 'noindex',
+      label: 'Не индексировать (noindex)',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description: 'Если включено, статья не попадает в sitemap и может быть закрыта от индексации метатегами.',
+      },
+    },
+    {
       name: 'viewCount',
       label: 'Просмотры',
       type: 'number',
