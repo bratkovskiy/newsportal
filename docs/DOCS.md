@@ -347,6 +347,36 @@ Sitemap: {SITE}/sitemap.xml
 
 Таким образом, для изменения `robots.txt` достаточно отредактировать поле `content` в админке и сохранить изменения — фронтенд начнёт отдавать новый текст без переката кода.
 
+## Заголовки безопасности фронта
+
+Фронтенд (Astro-приложение в `apps/web`) в прод-сборке отдаётся через встроенный Node-сервер с middleware, который навешивает security-заголовки на **каждый HTTP-ответ**.
+
+- **Где настраивается**
+  - Middleware: `/apps/web/src/middleware/headers.ts`
+  - Подключение к Astro: `/apps/web/src/middleware.ts`
+
+- **Content-Security-Policy (CSP)**
+  - Базовая политика: `default-src 'self'`.
+  - Разрешены только необходимые источники для:
+    - `script-src`: свой код + домены рекламных/аналитических скриптов (Yandex, Google Ads и т.п.).
+    - `style-src`: свой CSS + `fonts.googleapis.com`, `yastatic.net`.
+    - `img-src`: `'self'`, `data:`, все `https`-ресурсы, а также CMS (`http://localhost:3000`, `http://cms:3000`).
+    - `font-src`: `'self'`, `data:`, `fonts.gstatic.com`, `yastatic.net`.
+    - `frame-src`: только рекламные/партнёрские фреймы (Yandex, Google).
+    - `connect-src`: `'self'`, CMS (`localhost:3000`, `cms:3000`), аналитика (Google/Yandex), CDN Яндекса.
+  - При добавлении новых внешних скриптов/картинок/фреймов нужно обновлять соответствующие директивы в `cspDirectives`.
+
+- **Дополнительные security-заголовки**
+  - `X-Content-Type-Options: nosniff` — защита от MIME-sniffing.
+  - `X-Frame-Options: SAMEORIGIN` — запрет встраивания сайта в чужие iframe (дублирует `frame-ancestors 'none'` в CSP).
+  - `Referrer-Policy: strict-origin-when-cross-origin` — наружу уходит только origin, без полного пути.
+  - `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` — HSTS для боевого домена по HTTPS (на `localhost` браузеры игнорируют).
+  - `Permissions-Policy: geolocation=(), camera=(), microphone=(), interest-cohort=()` — отключает доступ к чувствительным функциям и FLoC на стороне браузера.
+
+- **Кэширование**
+  - Для HTML/JS/CSS: `Cache-Control: public, max-age=0, s-maxage=31536000, stale-while-revalidate=60`.
+  - Поведение: пользователи всегда видят свежий HTML, при этом CDN/прокси могут кешировать статику с повторной валидацией.
+
 ## Переменные окружения в Astro
 
 ⚠️ **ВАЖНО:** В Astro нельзя использовать `process.env`! Используйте только `import.meta.env`.

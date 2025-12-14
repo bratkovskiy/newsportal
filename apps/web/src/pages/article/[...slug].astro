@@ -652,6 +652,13 @@ const articleDetails = payloadArticle
         {articleDetails.category && articleDetails.category.slug && articleDetails.category.name && (
           <>
             <a
+              href="/categories"
+              class="hover:text-accent"
+            >
+              Категории
+            </a>
+            <span class="mx-2">/</span>
+            <a
               href={`/categories/${articleDetails.category.slug}`}
               class="hover:text-accent"
             >
