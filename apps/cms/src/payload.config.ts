@@ -1508,7 +1508,7 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI,
     },
     // Use migrations instead of automatic schema push
-    push: false,
+    push: process.env.PAYLOAD_DB_PUSH === 'true',
     migrationDir: path.resolve(__dirname, './migrations'),
   }),
   sharp, 

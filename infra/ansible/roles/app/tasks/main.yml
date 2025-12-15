@@ -1,0 +1,124 @@
+---
+- name: Check GitHub connectivity
+  command: curl -fsSL -o /dev/null https://github.com
+  register: github_ping
+  retries: 5
+  delay: 3
+  until: github_ping.rc == 0
+
+- name: Ensure Git SSH key path is provided for SSH repo
+  assert:
+    that:
+      - local_git_ssh_key_file | length > 0
+    fail_msg: "repo_url is SSH but local_git_ssh_key_file is not set. Provide GIT_KEY=/path/to/deploy_key when running deploy.sh"
+  when: repo_url is match('^git@')
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Ensure local Git SSH key exists
+  stat:
+    path: "{{ local_git_ssh_key_file }}"
+  register: git_key_stat
+  when: repo_url is match('^git@')
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Fail if local Git SSH key is missing
+  assert:
+    that:
+      - git_key_stat.stat.exists
+      - git_key_stat.stat.isreg
+    fail_msg: "local_git_ssh_key_file does not exist or is not a regular file: {{ local_git_ssh_key_file }}"
+  when: repo_url is match('^git@')
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Ensure .ssh directory exists for app user
+  file:
+    path: "/home/{{ app_user }}/.ssh"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0700"
+  when: repo_url is match('^git@')
+
+- name: Copy Git SSH deploy key to server
+  copy:
+    src: "{{ local_git_ssh_key_file }}"
+    dest: "{{ remote_git_ssh_key_file }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0600"
+  when: repo_url is match('^git@')
+  no_log: true
+
+- name: Add GitHub to known_hosts
+  known_hosts:
+    path: "/home/{{ app_user }}/.ssh/known_hosts"
+    name: "github.com"
+    key: "{{ lookup('pipe', 'ssh-keyscan -t rsa,ecdsa,ed25519 github.com 2>/dev/null') }}"
+  when: repo_url is match('^git@')
+  become_user: "{{ app_user }}"
+
+- name: Checkout repository
+  git:
+    repo: "{{ repo_url }}"
+    version: "{{ repo_branch }}"
+    dest: "{{ project_root }}"
+    force: true
+    update: true
+    depth: 1
+    single_branch: true
+  environment:
+    GIT_TERMINAL_PROMPT: "0"
+    GIT_SSH_COMMAND: "ssh -i {{ remote_git_ssh_key_file }} -o StrictHostKeyChecking=yes"
+  become_user: "{{ app_user }}"
+
+- name: Ensure local .env path is provided
+  assert:
+    that:
+      - local_env_file | length > 0
+    fail_msg: "local_env_file is not set. Provide path to env file from outside repo (e.g. ANSIBLE_EXTRA_VARS or deploy.sh)."
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Ensure local .env file exists
+  stat:
+    path: "{{ local_env_file }}"
+  register: env_stat
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Fail if local .env file is missing
+  assert:
+    that:
+      - env_stat.stat.exists
+      - env_stat.stat.isreg
+    fail_msg: "local_env_file does not exist or is not a regular file: {{ local_env_file }}"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Copy .env from control machine
+  copy:
+    src: "{{ local_env_file }}"
+    dest: "{{ remote_env_file }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0600"
+  no_log: true
+
+- name: Pull images
+  command: "{{ compose_cmd }} pull"
+  args:
+    chdir: "{{ project_root }}"
+
+- name: Build and start stack
+  command: "{{ compose_cmd }} up -d --build"
+  args:
+    chdir: "{{ project_root }}"

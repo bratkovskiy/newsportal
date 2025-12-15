@@ -37,6 +37,9 @@ yarn-error.log*
 **/*.tfstate.*
 **/.terraform.tfstate.lock.info
 
+# Local deploy cache
+.deploy/
+
 # Local infra helper scripts
 infra/scripts/*.sh
 

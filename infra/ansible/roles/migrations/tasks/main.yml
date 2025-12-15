@@ -1,0 +1,40 @@
+---
+- name: Ensure payload_migrations table exists
+  command: >-
+    {{ compose_cmd }} exec -T postgres psql -U payload -d payload
+    -v ON_ERROR_STOP=1
+    -c "CREATE TABLE IF NOT EXISTS public.payload_migrations (id serial PRIMARY KEY, name text NOT NULL, batch integer NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());
+    ALTER TABLE public.payload_migrations ADD COLUMN IF NOT EXISTS name text;
+    ALTER TABLE public.payload_migrations ADD COLUMN IF NOT EXISTS batch integer;
+    ALTER TABLE public.payload_migrations ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+    ALTER TABLE public.payload_migrations ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+    ALTER TABLE public.payload_migrations ALTER COLUMN name SET NOT NULL;
+    ALTER TABLE public.payload_migrations ALTER COLUMN batch SET NOT NULL;"
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+
+- name: Check if categories table exists
+  command: >-
+    {{ compose_cmd }} exec -T postgres psql -U payload -d payload
+    -tAc "SELECT to_regclass('public.categories') IS NOT NULL;"
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+  register: categories_table_exists
+  changed_when: false
+
+- name: Bootstrap Payload schema on empty DB
+  command: >-
+    {{ compose_cmd }} run --rm -e PAYLOAD_DB_PUSH=true cms
+    node_modules/.bin/tsx src/init-db.ts
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+  when: categories_table_exists.stdout | trim != 't'
+
+- name: Run CMS migrations
+  command: "{{ compose_cmd }} run --rm cms npm run migrate"
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"

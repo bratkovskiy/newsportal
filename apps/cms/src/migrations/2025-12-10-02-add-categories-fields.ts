@@ -20,37 +20,31 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
     ADD COLUMN IF NOT EXISTS meta_description text;
   `);
 
-  // Генерируем slug для существующих категорий
   await db.execute(sql`
-    UPDATE categories
-    SET slug = LOWER(REGEXP_REPLACE(name, '[^a-zA-Zа-яА-ЯёЁ0-9\\s-]', '', 'g'))
-    WHERE slug IS NULL;
-  `);
+    DO $$
+    BEGIN
+      IF to_regclass('public.categories') IS NOT NULL THEN
+        UPDATE categories
+        SET slug = LOWER(REGEXP_REPLACE(name, '[^a-zA-Zа-яА-ЯёЁ0-9\\s-]', '', 'g'))
+        WHERE slug IS NULL;
 
-  await db.execute(sql`
-    UPDATE categories
-    SET slug = REGEXP_REPLACE(slug, '\\s+', '-', 'g')
-    WHERE slug IS NOT NULL;
-  `);
+        UPDATE categories
+        SET slug = REGEXP_REPLACE(slug, '\\s+', '-', 'g')
+        WHERE slug IS NOT NULL;
 
-  await db.execute(sql`
-    UPDATE categories
-    SET slug = REGEXP_REPLACE(slug, '-+', '-', 'g')
-    WHERE slug IS NOT NULL;
-  `);
+        UPDATE categories
+        SET slug = REGEXP_REPLACE(slug, '-+', '-', 'g')
+        WHERE slug IS NOT NULL;
 
-  // Генерируем metaTitle для существующих категорий
-  await db.execute(sql`
-    UPDATE categories
-    SET meta_title = CONCAT(name, ' - LADY.NEWS')
-    WHERE meta_title IS NULL;
-  `);
+        UPDATE categories
+        SET meta_title = CONCAT(name, ' - LADY.NEWS')
+        WHERE meta_title IS NULL;
 
-  // Генерируем metaDescription для существующих категорий
-  await db.execute(sql`
-    UPDATE categories
-    SET meta_description = CONCAT('Все материалы из категории ', name)
-    WHERE meta_description IS NULL;
+        UPDATE categories
+        SET meta_description = CONCAT('Все материалы из категории ', name)
+        WHERE meta_description IS NULL;
+      END IF;
+    END $$;
   `);
 }
 

@@ -106,7 +106,32 @@ resource "google_compute_instance" "this" {
   }
 
   metadata = {
-    "ssh-keys" = "${var.ssh_user}:${var.ssh_public_key}"
+    "ssh-keys"       = "${var.ssh_user}:${var.ssh_public_key}"
+    "startup-script" = <<-EOT
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      USERNAME="${var.ssh_user}"
+      PUBKEY="${var.ssh_public_key}"
+
+      if ! id -u "$USERNAME" >/dev/null 2>&1; then
+        useradd -m -s /bin/bash "$USERNAME"
+      fi
+
+      mkdir -p "/home/$USERNAME/.ssh"
+      chmod 700 "/home/$USERNAME/.ssh"
+      touch "/home/$USERNAME/.ssh/authorized_keys"
+      chmod 600 "/home/$USERNAME/.ssh/authorized_keys"
+
+      if ! grep -Fq "$PUBKEY" "/home/$USERNAME/.ssh/authorized_keys"; then
+        echo "$PUBKEY" >> "/home/$USERNAME/.ssh/authorized_keys"
+      fi
+
+      chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.ssh"
+
+      echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/$USERNAME"
+      chmod 440 "/etc/sudoers.d/$USERNAME"
+    EOT
   }
 
   dynamic "service_account" {

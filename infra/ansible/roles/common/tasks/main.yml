@@ -1,0 +1,36 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install base packages
+  apt:
+    name:
+      - ca-certificates
+      - curl
+      - git
+      - openssh-client
+      - gnupg
+      - lsb-release
+    state: present
+
+- name: Ensure app group exists
+  group:
+    name: "{{ app_user }}"
+    state: present
+
+- name: Ensure app user exists
+  user:
+    name: "{{ app_user }}"
+    group: "{{ app_user }}"
+    create_home: true
+    shell: /bin/bash
+
+- name: Ensure project directory exists
+  file:
+    path: "{{ project_root }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0755"

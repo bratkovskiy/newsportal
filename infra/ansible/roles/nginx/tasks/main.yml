@@ -1,0 +1,31 @@
+---
+- name: Install nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Configure nginx site
+  template:
+    src: newsportal.conf.j2
+    dest: /etc/nginx/sites-available/newsportal.conf
+    mode: "0644"
+  notify: reload nginx
+
+- name: Disable default site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: reload nginx
+
+- name: Enable newsportal site
+  file:
+    src: /etc/nginx/sites-available/newsportal.conf
+    dest: /etc/nginx/sites-enabled/newsportal.conf
+    state: link
+  notify: reload nginx
+
+- name: Ensure nginx is running
+  service:
+    name: nginx
+    state: started
+    enabled: true

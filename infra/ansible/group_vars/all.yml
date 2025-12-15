@@ -1,0 +1,11 @@
+---
+app_user: "deploy"
+project_root: "/opt/newsportal"
+repo_url: "git@github.com:bratkovskiy/newsportal.git"
+repo_branch: "main"
+local_env_file: ""
+remote_env_file: "{{ project_root }}/.env"
+compose_cmd: "docker compose"
+
+local_git_ssh_key_file: ""
+remote_git_ssh_key_file: "/home/{{ app_user }}/.ssh/github_deploy_key"
