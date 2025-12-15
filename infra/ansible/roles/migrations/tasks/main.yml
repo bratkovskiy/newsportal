@@ -36,7 +36,7 @@
 
 - name: Bootstrap Payload schema on empty DB
   command: >-
-    {{ compose_cmd }} run --rm -e PAYLOAD_DB_PUSH=true cms
+    {{ compose_cmd }} run --rm -e PAYLOAD_DB_PUSH=true -e NODE_ENV=development cms
     node_modules/.bin/tsx src/init-db.ts
   args:
     chdir: "{{ project_root }}"
