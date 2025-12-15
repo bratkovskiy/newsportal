@@ -24,6 +24,16 @@
   register: articles_table_exists
   changed_when: false
 
+- name: Check if tags table exists
+  command: >-
+    {{ compose_cmd }} exec -T postgres psql -U payload -d payload
+    -tAc "SELECT to_regclass('public.tags') IS NOT NULL;"
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+  register: tags_table_exists
+  changed_when: false
+
 - name: Bootstrap Payload schema on empty DB
   command: >-
     {{ compose_cmd }} run --rm -e PAYLOAD_DB_PUSH=true cms
@@ -31,7 +41,7 @@
   args:
     chdir: "{{ project_root }}"
   become_user: "{{ app_user }}"
-  when: articles_table_exists.stdout | trim != 't'
+  when: (articles_table_exists.stdout | trim != 't') or (tags_table_exists.stdout | trim != 't')
 
 - name: Re-check if articles table exists after bootstrap
   command: >-
@@ -43,6 +53,16 @@
   register: articles_table_exists_after_bootstrap
   changed_when: false
 
+- name: Re-check if tags table exists after bootstrap
+  command: >-
+    {{ compose_cmd }} exec -T postgres psql -U payload -d payload
+    -tAc "SELECT to_regclass('public.tags') IS NOT NULL;"
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+  register: tags_table_exists_after_bootstrap
+  changed_when: false
+
 - name: Fail if Payload schema bootstrap did not create core tables
   command: >-
     {{ compose_cmd }} exec -T postgres psql -U payload -d payload
@@ -50,7 +70,12 @@
   args:
     chdir: "{{ project_root }}"
   become_user: "{{ app_user }}"
-  when: articles_table_exists_after_bootstrap.stdout | trim != 't'
+  when: (articles_table_exists_after_bootstrap.stdout | trim != 't') or (tags_table_exists_after_bootstrap.stdout | trim != 't')
+
+- name: Stop deployment if Payload core tables are missing
+  fail:
+    msg: "Payload schema bootstrap did not create required tables (articles/tags). See previous \\dt+ output."
+  when: (articles_table_exists_after_bootstrap.stdout | trim != 't') or (tags_table_exists_after_bootstrap.stdout | trim != 't')
 
 - name: Run CMS migrations
   command: "{{ compose_cmd }} run --rm cms npm run migrate"

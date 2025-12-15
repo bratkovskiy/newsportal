@@ -2,6 +2,13 @@ import type { MigrateUpArgs, MigrateDownArgs } from '@payloadcms/db-postgres'
 import { sql } from 'drizzle-orm'
 
 export async function up({ db, payload }: MigrateUpArgs): Promise<void> {
+  const tagsTableResult = await db.execute(sql`
+    SELECT to_regclass('public.tags') as t;
+  `);
+
+  const tagsTable = (tagsTableResult.rows?.[0] as any)?.t as string | null | undefined;
+  if (!tagsTable) return;
+
   // Добавляем поле slug
   await db.execute(sql`
     ALTER TABLE IF EXISTS tags
