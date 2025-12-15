@@ -51,6 +51,7 @@
   args:
     chdir: "{{ project_root }}"
   become_user: "{{ app_user }}"
+  register: payload_bootstrap_result
   when: (articles_table_exists.stdout | trim != 't') or (tags_table_exists.stdout | trim != 't') or (categories_table_exists.stdout | trim != 't')
 
 - name: Re-check if articles table exists after bootstrap
@@ -127,7 +128,8 @@
       {{
         (
           (payload_migrations_count.stdout | trim | int == 0)
-          and (payload_db_has_content_rows.stdout | trim != 't')
+          or (payload_db_has_content_rows.stdout | trim != 't')
+          or ((payload_bootstrap_result is defined) and (payload_bootstrap_result.changed | default(false)))
         )
         or (payload_migrate_force | default(false) | bool)
       }}
