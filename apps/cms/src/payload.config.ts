@@ -1482,24 +1482,30 @@ const ContactsPage: GlobalConfig = {
   ],
 };
 
+const serverURL = process.env.SERVER_URL || 'http://localhost:3000'
+const serverOrigin = (() => {
+  try {
+    return new URL(serverURL).origin
+  } catch {
+    return serverURL
+  }
+})()
+const allowedOrigins = [
+  'http://localhost:4321',
+  'http://localhost:4322',
+  'http://localhost:3000',
+  'http://cms:3000',
+  serverOrigin,
+]
+
 export default buildConfig({
-  serverURL: 'http://localhost:3000',
+  serverURL: serverURL,
   secret: process.env.PAYLOAD_SECRET || 'a-good-secret-key',
   editor: lexicalEditor(),
   collections: [Users, Authors, Categories, Tags, Media, Articles, Feeds, Likes, AdSlots],
   globals: [AnalyticsSettings, RobotsSettings, SiteSettings, LegalPage, PrivacyPage, CookiesPage, ContactsPage],
-  cors: [
-    'http://localhost:4321',
-    'http://localhost:4322',
-    'http://localhost:3000',
-    'http://cms:3000',
-  ],
-  csrf: [
-    'http://localhost:4321',
-    'http://localhost:4322',
-    'http://localhost:3000',
-    'http://cms:3000',
-  ],
+  cors: allowedOrigins,
+  csrf: allowedOrigins,
   typescript: {
     outputFile: path.resolve(__dirname, 'payload-types.ts'),
   },
