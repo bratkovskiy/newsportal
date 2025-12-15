@@ -10,7 +10,12 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 
   // Добавляем индекс для быстрого поиска по просмотрам
   await db.execute(sql`
-    CREATE INDEX IF NOT EXISTS articles_view_count_idx ON articles(view_count DESC);
+    DO $$
+    BEGIN
+      IF to_regclass('public.articles') IS NOT NULL THEN
+        CREATE INDEX IF NOT EXISTS articles_view_count_idx ON articles(view_count DESC);
+      END IF;
+    END $$;
   `);
 }
 

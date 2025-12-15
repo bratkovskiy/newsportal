@@ -14,14 +14,14 @@
     chdir: "{{ project_root }}"
   become_user: "{{ app_user }}"
 
-- name: Check if categories table exists
+- name: Check if articles table exists
   command: >-
     {{ compose_cmd }} exec -T postgres psql -U payload -d payload
-    -tAc "SELECT to_regclass('public.categories') IS NOT NULL;"
+    -tAc "SELECT to_regclass('public.articles') IS NOT NULL;"
   args:
     chdir: "{{ project_root }}"
   become_user: "{{ app_user }}"
-  register: categories_table_exists
+  register: articles_table_exists
   changed_when: false
 
 - name: Bootstrap Payload schema on empty DB
@@ -31,7 +31,26 @@
   args:
     chdir: "{{ project_root }}"
   become_user: "{{ app_user }}"
-  when: categories_table_exists.stdout | trim != 't'
+  when: articles_table_exists.stdout | trim != 't'
+
+- name: Re-check if articles table exists after bootstrap
+  command: >-
+    {{ compose_cmd }} exec -T postgres psql -U payload -d payload
+    -tAc "SELECT to_regclass('public.articles') IS NOT NULL;"
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+  register: articles_table_exists_after_bootstrap
+  changed_when: false
+
+- name: Fail if Payload schema bootstrap did not create core tables
+  command: >-
+    {{ compose_cmd }} exec -T postgres psql -U payload -d payload
+    -c "\\dt+"
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+  when: articles_table_exists_after_bootstrap.stdout | trim != 't'
 
 - name: Run CMS migrations
   command: "{{ compose_cmd }} run --rm cms npm run migrate"
