@@ -78,7 +78,7 @@
   when: (articles_table_exists_after_bootstrap.stdout | trim != 't') or (tags_table_exists_after_bootstrap.stdout | trim != 't')
 
 - name: Run CMS migrations
-  command: "{{ compose_cmd }} run --rm cms npm run migrate"
+  command: "{{ compose_cmd }} run --rm -e CI=true cms npm run migrate"
   args:
     chdir: "{{ project_root }}"
   become_user: "{{ app_user }}"
