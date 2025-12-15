@@ -44,6 +44,18 @@ GIT_KEY=~/.config/newsportal/github_deploy_key
 ./deploy_only.sh
 ```
 
+Если после `git clone` получаете `Отказано в доступе`, один раз сделайте:
+
+```bash
+chmod +x ./deploy.sh ./deploy_provision.sh ./deploy_only.sh
+```
+
+Либо можно запускать через bash:
+
+```bash
+bash ./deploy_only.sh
+```
+
 
 ## 1) Полный деплой (Terraform + Ansible) — создание VM + развертывание
 
