@@ -22,6 +22,7 @@ import * as addPrivacyPageGlobal from './2025-12-13-03-add-privacy-page-global';
 import * as addCookiesPageGlobal from './2025-12-13-04-add-cookies-page-global';
 import * as addContactsPageGlobal from './2025-12-13-05-add-contacts-page-global';
 import * as addArticlesNoindex from './2025-12-14-01-add-articles-noindex';
+import * as addArticleVersionsNoindex from './2025-12-14-02-add-article-versions-noindex';
 
 // Payload CLI читает просто массив модулей с up/down,
 // строгая типизация здесь не обязательна.
@@ -50,4 +51,5 @@ export const migrations = [
   addCookiesPageGlobal,
   addContactsPageGlobal,
   addArticlesNoindex,
+  addArticleVersionsNoindex,
 ];
