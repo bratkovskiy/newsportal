@@ -34,6 +34,16 @@
   register: tags_table_exists
   changed_when: false
 
+- name: Check if categories table exists
+  command: >-
+    {{ compose_cmd }} exec -T postgres psql -U payload -d payload
+    -tAc "SELECT to_regclass('public.categories') IS NOT NULL;"
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+  register: categories_table_exists
+  changed_when: false
+
 - name: Bootstrap Payload schema on empty DB
   command: >-
     {{ compose_cmd }} run --rm -e PAYLOAD_DB_PUSH=true -e NODE_ENV=development cms
@@ -41,7 +51,7 @@
   args:
     chdir: "{{ project_root }}"
   become_user: "{{ app_user }}"
-  when: (articles_table_exists.stdout | trim != 't') or (tags_table_exists.stdout | trim != 't')
+  when: (articles_table_exists.stdout | trim != 't') or (tags_table_exists.stdout | trim != 't') or (categories_table_exists.stdout | trim != 't')
 
 - name: Re-check if articles table exists after bootstrap
   command: >-
@@ -63,6 +73,16 @@
   register: tags_table_exists_after_bootstrap
   changed_when: false
 
+- name: Re-check if categories table exists after bootstrap
+  command: >-
+    {{ compose_cmd }} exec -T postgres psql -U payload -d payload
+    -tAc "SELECT to_regclass('public.categories') IS NOT NULL;"
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+  register: categories_table_exists_after_bootstrap
+  changed_when: false
+
 - name: Fail if Payload schema bootstrap did not create core tables
   command: >-
     {{ compose_cmd }} exec -T postgres psql -U payload -d payload
@@ -70,15 +90,58 @@
   args:
     chdir: "{{ project_root }}"
   become_user: "{{ app_user }}"
-  when: (articles_table_exists_after_bootstrap.stdout | trim != 't') or (tags_table_exists_after_bootstrap.stdout | trim != 't')
+  when: (articles_table_exists_after_bootstrap.stdout | trim != 't') or (tags_table_exists_after_bootstrap.stdout | trim != 't') or (categories_table_exists_after_bootstrap.stdout | trim != 't')
 
 - name: Stop deployment if Payload core tables are missing
   fail:
-    msg: "Payload schema bootstrap did not create required tables (articles/tags). See previous \\dt+ output."
-  when: (articles_table_exists_after_bootstrap.stdout | trim != 't') or (tags_table_exists_after_bootstrap.stdout | trim != 't')
+    msg: "Payload schema bootstrap did not create required tables (articles/tags/categories). See previous \\dt+ output."
+  when: (articles_table_exists_after_bootstrap.stdout | trim != 't') or (tags_table_exists_after_bootstrap.stdout | trim != 't') or (categories_table_exists_after_bootstrap.stdout | trim != 't')
 
-- name: Run CMS migrations
-  command: "{{ compose_cmd }} run --rm -e CI=true cms npm run migrate"
+- name: Check how many payload migrations are already recorded
+  command: >-
+    {{ compose_cmd }} exec -T postgres psql -U payload -d payload
+    -tAc "SELECT COUNT(*) FROM public.payload_migrations;"
   args:
     chdir: "{{ project_root }}"
   become_user: "{{ app_user }}"
+  register: payload_migrations_count
+  changed_when: false
+
+- name: Check if database has any content rows (articles/categories/tags)
+  command: >-
+    {{ compose_cmd }} exec -T postgres psql -U payload -d payload
+    -tAc "SELECT (
+      (CASE WHEN to_regclass('public.articles') IS NULL THEN false ELSE EXISTS (SELECT 1 FROM public.articles LIMIT 1) END)
+      OR (CASE WHEN to_regclass('public.categories') IS NULL THEN false ELSE EXISTS (SELECT 1 FROM public.categories LIMIT 1) END)
+      OR (CASE WHEN to_regclass('public.tags') IS NULL THEN false ELSE EXISTS (SELECT 1 FROM public.tags LIMIT 1) END)
+    );"
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+  register: payload_db_has_content_rows
+  changed_when: false
+
+- name: Decide if it is safe to auto-confirm Payload migration warning
+  set_fact:
+    payload_safe_to_autoconfirm_migrate: >-
+      {{
+        (
+          (payload_migrations_count.stdout | trim | int == 0)
+          and (payload_db_has_content_rows.stdout | trim != 't')
+        )
+        or (payload_migrate_force | default(false) | bool)
+      }}
+
+- name: Run CMS migrations
+  shell: >-
+    set -euo pipefail;
+    printf 'y\n' | {{ compose_cmd }} run --rm -T -e CI=true cms npm run migrate
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+  when: payload_safe_to_autoconfirm_migrate
+
+- name: Stop deployment if migrate requires confirmation on non-empty DB
+  fail:
+    msg: "Payload migrate requires confirmation because DB was previously pushed in dev mode. Refusing to auto-confirm on non-empty DB. Set payload_migrate_force=true to override."
+  when: not payload_safe_to_autoconfirm_migrate
