@@ -197,6 +197,15 @@
   register: payload_db_has_content_rows
   changed_when: false
 
+- name: Detect if database was seeded (marker or current run)
+  set_fact:
+    payload_db_seeded: >-
+      {{
+        (db_seed_marker.stat.exists | default(false))
+        or ((db_seed_restore_result is defined) and ((db_seed_restore_result.rc | default(1)) == 0))
+      }}
+  changed_when: false
+
 - name: Decide if it is safe to auto-confirm Payload migration warning
   set_fact:
     payload_safe_to_autoconfirm_migrate: >-
@@ -205,6 +214,7 @@
           (payload_migrations_count.stdout | trim | int == 0)
           or (payload_db_has_content_rows.stdout | trim != 't')
           or ((payload_bootstrap_result is defined) and (payload_bootstrap_result.changed | default(false)))
+          or (payload_db_seeded | default(false))
         )
         or (payload_migrate_force | default(false) | bool)
       }}

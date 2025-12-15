@@ -249,3 +249,19 @@ Ansible выполняет:
 - `.env` не хранится в git.
 - сервис-аккаунт ключ `*.json` должен быть вне git (он игнорируется).
 - `terraform.tfstate` не хранится в git (игнорируется).
+
+---
+
+## 6) Troubleshooting
+
+### 6.1 SSH: REMOTE HOST IDENTIFICATION HAS CHANGED
+
+Если вы пересоздали VM, но IP остался тем же, SSH может ругаться на изменение host key.
+
+Исправление (на локальной машине):
+
+```bash
+ssh-keygen -f "$HOME/.ssh/known_hosts" -R "<IP>"
+```
+
+После этого подключайтесь снова и подтвердите новый ключ.
