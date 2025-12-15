@@ -113,6 +113,14 @@
     mode: "0600"
   no_log: true
 
+- name: Ensure SERVER_URL is set in remote .env
+  lineinfile:
+    path: "{{ remote_env_file }}"
+    regexp: '^SERVER_URL='
+    line: "SERVER_URL={{ (public_url is defined and (public_url | length > 0)) | ternary(public_url, 'http://' ~ ansible_host) }}"
+    create: true
+  no_log: true
+
 - name: Pull images
   command: "{{ compose_cmd }} pull"
   args:
