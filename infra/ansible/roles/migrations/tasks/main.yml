@@ -136,7 +136,6 @@
 
 - name: Run CMS migrations
   shell: >-
-    set -euo pipefail;
     printf 'y\n' | {{ compose_cmd }} run --rm -T -e CI=true cms npm run migrate
   args:
     chdir: "{{ project_root }}"
