@@ -4,11 +4,27 @@ server {
 
   client_max_body_size 50m;
 
-  # Proxy all admin routes to the CMS (Payload) running on port 3000
-  # Using "/admin" without trailing slash in both location and proxy_pass
-  # ensures that both /admin and /admin/ are handled consistently and
-  # avoids redirect loops between web and cms apps.
+  # Proxy all Payload admin routes to the CMS (Next.js app) on port 3000
+  # /admin and /admin/... are handled here
   location /admin {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  # Next.js static assets for the CMS admin (/admin) are served from /_next
+  location /_next {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  # Payload API (used by admin) lives on the CMS as well
+  location /api {
     proxy_pass http://127.0.0.1:3000;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
