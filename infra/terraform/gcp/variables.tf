@@ -1,98 +1,61 @@
-variable "project_id" {
-  description = "GCP project where the VM will be created"
-  type        = string
+variable "project_id" { type = string }
+variable "region"     { type = string }
+variable "zone"       { type = string }
+
+variable "credentials_file" {
+  type    = string
+  default = null
 }
 
-variable "region" {
-  description = "GCP region"
-  type        = string
-  default     = "europe-west3"
-}
-
-variable "zone" {
-  description = "GCP zone"
-  type        = string
-  default     = "europe-west3-c"
-}
-
-variable "instance_name" {
-  description = "Name of the compute instance"
-  type        = string
-  default     = "webapp-vm"
+variable "name" {
+  type    = string
+  default = "newsportal-vm"
 }
 
 variable "machine_type" {
-  description = "GCE machine type"
-  type        = string
-  default     = "e2-standard-2"
+  type    = string
+  default = "e2-medium"
 }
 
-variable "boot_image" {
-  description = "Image used for the boot disk"
-  type        = string
-  default     = "ubuntu-os-cloud/ubuntu-2204-lts"
+variable "disk_gb" {
+  type    = number
+  default = 30
 }
 
-variable "boot_disk_size_gb" {
-  description = "Boot disk size in GB"
-  type        = number
-  default     = 40
+variable "image" {
+  type    = string
+  default = "ubuntu-os-cloud/ubuntu-2204-lts"
 }
 
-variable "boot_disk_type" {
-  description = "Boot disk type (pd-standard, pd-ssd, etc.)"
-  type        = string
-  default     = "pd-balanced"
+variable "ssh_user" { type = string }
+variable "ssh_public_key" { type = string }
+
+variable "ssh_private_key_path" { type = string }
+
+variable "ssh_source_ranges" {
+  type    = list(string)
+  default = ["0.0.0.0/0"]
 }
 
-variable "network" {
-  description = "VPC network name (default for default network)"
-  type        = string
-  default     = "default"
+variable "web_source_ranges" {
+  type    = list(string)
+  default = ["0.0.0.0/0"]
 }
 
-variable "ssh_user" {
-  description = "Linux user to authorize with provided SSH key"
-  type        = string
-  default     = "deploy"
+variable "extra_tcp_ports" {
+  type    = list(string)
+  default = []
 }
 
-variable "ssh_public_key" {
-  description = "Contents of the SSH public key to add to authorized_keys"
-  type        = string
+variable "custom_source_ranges" {
+  type    = list(string)
+  default = ["0.0.0.0/0"]
 }
 
-variable "ssh_private_key" {
-  description = "SSH private key content for connection"
-  type        = string
-  sensitive   = true
+variable "service_account_email" {
+  type    = string
+  default = null
 }
 
-variable "ssh_private_key_path" {
-  description = "Path to SSH private key file"
-  type        = string
-}
-
-variable "startup_script" {
-  description = "Optional startup script executed on VM boot"
-  type        = string
-  default     = ""
-}
-
-variable "environment" {
-  description = "Environment label (prod/stage/dev)"
-  type        = string
-  default     = "prod"
-}
-
-variable "additional_tags" {
-  description = "Extra network tags"
-  type        = list(string)
-  default     = []
-}
-
-variable "extra_labels" {
-  description = "Extra labels to attach to the VM"
-  type        = map(string)
-  default     = {}
-}
+variable "repo_url" { type = string }
+variable "repo_branch" { type = string }

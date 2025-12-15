@@ -1,10 +1,10 @@
+
 terraform {
   required_version = ">= 1.6.0"
-
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.30"
+      version = ">= 5.0"
     }
   }
 }
@@ -13,81 +13,107 @@ provider "google" {
   project = var.project_id
   region  = var.region
   zone    = var.zone
+  credentials = var.credentials_file != null ? file(var.credentials_file) : null
 }
 
-resource "google_compute_instance" "webapp" {
-  name         = var.instance_name
+locals {
+  network_name = "${var.name}-net"
+  subnet_name  = "${var.name}-subnet"
+  ip_name      = "${var.name}-ip"
+  tag          = "${var.name}-tag"
+}
+
+resource "google_compute_network" "this" {
+  name                    = local.network_name
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "this" {
+  name          = local.subnet_name
+  ip_cidr_range = "10.10.0.0/24"
+  region        = var.region
+  network       = google_compute_network.this.id
+}
+
+resource "google_compute_address" "this" {
+  name   = local.ip_name
+  region = var.region
+}
+
+resource "google_compute_firewall" "allow_ssh" {
+  name    = "${var.name}-allow-ssh"
+  network = google_compute_network.this.name
+
+  direction     = "INGRESS"
+  source_ranges = var.ssh_source_ranges
+  target_tags   = [local.tag]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+}
+
+resource "google_compute_firewall" "allow_web" {
+  name    = "${var.name}-allow-web"
+  network = google_compute_network.this.name
+
+  direction     = "INGRESS"
+  source_ranges = var.web_source_ranges
+  target_tags   = [local.tag]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80", "443"]
+  }
+}
+
+resource "google_compute_firewall" "allow_extra_tcp" {
+  count   = length(var.extra_tcp_ports) > 0 ? 1 : 0
+  name    = "${var.name}-allow-extra-tcp"
+  network = google_compute_network.this.name
+
+  direction     = "INGRESS"
+  source_ranges = var.custom_source_ranges
+  target_tags   = [local.tag]
+
+  allow {
+    protocol = "tcp"
+    ports    = var.extra_tcp_ports
+  }
+}
+
+resource "google_compute_instance" "this" {
+  name         = var.name
   machine_type = var.machine_type
   zone         = var.zone
 
-  tags = concat(["webapp"], var.additional_tags)
+  tags = [local.tag]
 
   boot_disk {
     initialize_params {
-      image = var.boot_image
-      size  = var.boot_disk_size_gb
-      type  = var.boot_disk_type
+      image = var.image
+      size  = var.disk_gb
+      type  = "pd-balanced"
     }
   }
 
   network_interface {
-    network = var.network
-
+    subnetwork = google_compute_subnetwork.this.id
     access_config {
-      // Ephemeral external IP
+      nat_ip = google_compute_address.this.address
     }
   }
 
   metadata = {
-    ssh-keys = "${var.ssh_user}:${var.ssh_public_key}"
+    "ssh-keys" = "${var.ssh_user}:${var.ssh_public_key}"
   }
 
-  metadata_startup_script = var.startup_script
-
-  labels = merge({
-    environment = var.environment
-    role        = "webapp"
-  }, var.extra_labels)
-
-  # Wait for SSH to be ready before running Ansible
-  provisioner "remote-exec" {
-    connection {
-      type        = "ssh"
-      host        = self.network_interface[0].access_config[0].nat_ip
-      user        = var.ssh_user
-      private_key = var.ssh_private_key
-      timeout     = "5m"
+  dynamic "service_account" {
+    for_each = var.service_account_email == null ? [] : [1]
+    content {
+      email  = var.service_account_email
+      scopes = ["https://www.googleapis.com/auth/cloud-platform"]
     }
-
-    inline = [
-      "echo 'SSH connection established'",
-      "sudo apt-get update"
-    ]
   }
-
-  # Run Ansible after VM is ready
-  provisioner "local-exec" {
-    command = <<-EOT
-      cd ../../ansible
-      ansible-playbook -i inventory/prod.ini site.yml \
-        -e ansible_host=${self.network_interface[0].access_config[0].nat_ip} \
-        -e ansible_user=${var.ssh_user} \
-        -e ansible_ssh_private_key_file=${var.ssh_private_key_path} \
-        --limit web
-    EOT
-  }
-}
-
-resource "google_compute_firewall" "vault_access" {
-  name    = "vault-access"
-  network = var.network
-  
-  allow {
-    protocol = "tcp"
-    ports    = ["8200"]
-  }
-  
-  source_tags = ["webapp"]
-  
-  description = "Allow Vault access from webapp server"
 }

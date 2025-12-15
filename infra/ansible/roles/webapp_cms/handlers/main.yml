@@ -1,7 +1,0 @@
----
-- name: Cleanup probe file
-  become: true
-  become_user: "{{ service_user_cms }}"
-  ansible.builtin.file:
-    path: "{{ cms_media_dir }}/.probe"
-    state: absent

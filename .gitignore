@@ -28,6 +28,15 @@ yarn-error.log*
 *.tfvars
 !**/*.tfvars.example
 
+# Terraform service account keys
+/infra/terraform/gcp/*.json
+
+# Terraform workdir & state
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/.terraform.tfstate.lock.info
+
 # Local infra helper scripts
 infra/scripts/*.sh
 

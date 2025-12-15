@@ -1,38 +1,30 @@
 #!/bin/bash
-set -e  # Exit immediately if a command exits with a non-zero status
+set -euo pipefail
 
 echo "🚀 Starting deployment process..."
 
-# 1. Initialize Terraform
 echo "🔧 Initializing Terraform..."
-cd infra/terraform/gcp
-terraform init
+terraform -chdir=infra/terraform/gcp init -reconfigure -input=false
 
-# 2. Apply Terraform changes
 echo "🚀 Applying Terraform configuration..."
-terraform apply -auto-approve
+terraform -chdir=infra/terraform/gcp apply -auto-approve -input=false
 
-# 3. Get the server IP from Terraform output
-SERVER_IP=$(terraform output -raw server_ip)
+SERVER_IP=$(terraform -chdir=infra/terraform/gcp output -raw vm_ip)
 echo "🌐 Server IP: $SERVER_IP"
 
-# 4. Go back to project root
-cd ../../..
-
-# 5. Update Ansible inventory with the new IP
-echo "📝 Updating Ansible inventory..."
-cat > infra/ansible/inventory/prod.ini <<EOL
+if [ -f infra/ansible/site.yml ]; then
+  echo "📝 Updating Ansible inventory..."
+  mkdir -p infra/ansible
+  cat > infra/ansible/inventory.ini <<EOL
 [web]
-$SERVER_IP
-
-[all:vars]
-ansible_python_interpreter=/usr/bin/python3
-ansible_user=root
+newsportal ansible_host=$SERVER_IP ansible_user=deploy
 EOL
 
-# 6. Run Ansible playbook
-echo "⚙️  Running Ansible playbook..."
-ansible-playbook -i infra/ansible/inventory/prod.ini infra/ansible/site.yml -l web
+  echo "⚙️  Running Ansible playbook..."
+  ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i infra/ansible/inventory.ini infra/ansible/site.yml
+else
+  echo "⚠️  infra/ansible/site.yml not found. Terraform finished, skipping Ansible."
+fi
 
 echo "✅ Deployment completed successfully!"
 echo "🌍 Your application should be available at: http://$SERVER_IP"
