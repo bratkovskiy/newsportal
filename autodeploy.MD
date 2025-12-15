@@ -7,6 +7,43 @@
 - Terraform создаёт/обновляет инфраструктуру.
 - Ansible разворачивает приложение на VM через Docker Compose, выполняет миграции и настраивает nginx.
 
+---
+
+## 0) Самый простой запуск (без запоминания длинных команд)
+
+В репозитории есть два скрипта-обёртки:
+
+- `./deploy_provision.sh` — полный деплой (Terraform + Ansible)
+- `./deploy_only.sh` — деплой без Terraform (только Ansible)
+
+Один раз создайте локальный конфиг (не попадает в git):
+
+- `deploy.local.env`
+
+Пример:
+
+```bash
+SITE=default
+ENV_FILE=./.env
+GIT_KEY=~/.config/newsportal/github_deploy_key
+
+# опционально:
+# TFVARS=infra/terraform/gcp/terraform.tfvars
+# DB_SEED_FILE=./seed.sql
+```
+
+После этого запускайте просто:
+
+```bash
+./deploy_provision.sh
+```
+
+или
+
+```bash
+./deploy_only.sh
+```
+
 
 ## 1) Полный деплой (Terraform + Ansible) — создание VM + развертывание
 

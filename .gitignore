@@ -40,6 +40,9 @@ yarn-error.log*
 # Local deploy cache
 .deploy/
 
+# Local deploy wrapper config
+deploy.local.env
+
 # Local infra helper scripts
 infra/scripts/*.sh
 
