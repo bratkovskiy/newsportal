@@ -43,3 +43,8 @@
     name: "{{ app_user }}"
     groups: docker
     append: true
+  register: add_app_user_to_docker_group
+
+- name: Reset SSH connection to apply docker group membership
+  meta: reset_connection
+  when: add_app_user_to_docker_group.changed

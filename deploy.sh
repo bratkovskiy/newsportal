@@ -10,6 +10,7 @@ INVENTORY_FILE="$ANSIBLE_DIR/inventory.ini"
 
 ENV_FILE_PATH="${ENV_FILE:-}"
 GIT_KEY_PATH="${GIT_KEY:-}"
+DB_SEED_FILE_PATH="${DB_SEED_FILE:-}"
 
 ROOT_DIR="$(pwd)"
 if [ -n "$ENV_FILE_PATH" ] && [[ "$ENV_FILE_PATH" != /* ]]; then
@@ -18,10 +19,17 @@ fi
 if [ -n "$GIT_KEY_PATH" ] && [[ "$GIT_KEY_PATH" != /* ]]; then
   GIT_KEY_PATH="$ROOT_DIR/$GIT_KEY_PATH"
 fi
+if [ -n "$DB_SEED_FILE_PATH" ] && [[ "$DB_SEED_FILE_PATH" != /* ]]; then
+  DB_SEED_FILE_PATH="$ROOT_DIR/$DB_SEED_FILE_PATH"
+fi
 
 SITE="${SITE:-default}"
 TFVARS_FILE="${TFVARS:-$TFVARS_FILE_DEFAULT}"
 MODE="${MODE:-provision}"
+
+if [ -n "$TFVARS_FILE" ] && [[ "$TFVARS_FILE" != /* ]]; then
+  TFVARS_FILE="$ROOT_DIR/$TFVARS_FILE"
+fi
 
 SSH_USER_OVERRIDE="${SSH_USER:-}"
 SSH_KEY_PATH_OVERRIDE="${SSH_KEY_PATH:-}"
@@ -137,6 +145,7 @@ EOL
   ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook \
     -i "$INVENTORY_FILE" \
     -e "local_env_file=$ENV_FILE_PATH" \
+    ${DB_SEED_FILE_PATH:+-e "local_db_seed_file=$DB_SEED_FILE_PATH"} \
     ${GIT_KEY_PATH:+-e "local_git_ssh_key_file=$GIT_KEY_PATH"} \
     "$ANSIBLE_DIR/site.yml"
 else

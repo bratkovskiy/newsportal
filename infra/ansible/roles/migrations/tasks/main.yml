@@ -1,4 +1,79 @@
 ---
+- name: Check if DB seed marker exists
+  stat:
+    path: "{{ project_root }}/.db_seeded"
+  become_user: "{{ app_user }}"
+  register: db_seed_marker
+  changed_when: false
+
+- name: Check if database has any public tables
+  command: >-
+    {{ compose_cmd }} exec -T postgres psql -U payload -d payload
+    -tAc "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE');"
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+  register: payload_db_has_any_tables
+  changed_when: false
+
+- name: Ensure seed directory exists
+  file:
+    path: "{{ project_root }}/.db_seed"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0700"
+  when:
+    - local_db_seed_file is defined
+    - (local_db_seed_file | length) > 0
+    - not (db_seed_marker.stat.exists | default(false))
+    - (payload_db_has_any_tables.stdout | trim) != 't'
+
+- name: Copy DB seed dump to server
+  copy:
+    src: "{{ local_db_seed_file }}"
+    dest: "{{ project_root }}/.db_seed/seed.sql"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0600"
+  when:
+    - local_db_seed_file is defined
+    - (local_db_seed_file | length) > 0
+    - not (db_seed_marker.stat.exists | default(false))
+    - (payload_db_has_any_tables.stdout | trim) != 't'
+
+- name: Restore DB seed into Postgres (first deploy only)
+  shell: >-
+    {{ compose_cmd }} exec -T postgres psql -U payload -d payload -v ON_ERROR_STOP=1 < {{ project_root }}/.db_seed/seed.sql
+  args:
+    chdir: "{{ project_root }}"
+  become_user: "{{ app_user }}"
+  register: db_seed_restore_result
+  when:
+    - local_db_seed_file is defined
+    - (local_db_seed_file | length) > 0
+    - not (db_seed_marker.stat.exists | default(false))
+    - (payload_db_has_any_tables.stdout | trim) != 't'
+
+- name: Create DB seed marker file
+  file:
+    path: "{{ project_root }}/.db_seeded"
+    state: touch
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0600"
+  when:
+    - db_seed_restore_result is defined
+    - (db_seed_restore_result.rc | default(1)) == 0
+
+- name: Remove DB seed dump from server
+  file:
+    path: "{{ project_root }}/.db_seed/seed.sql"
+    state: absent
+  when:
+    - db_seed_restore_result is defined
+    - (db_seed_restore_result.rc | default(1)) == 0
+
 - name: Ensure payload_migrations table exists
   command: >-
     {{ compose_cmd }} exec -T postgres psql -U payload -d payload
