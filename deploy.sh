@@ -11,6 +11,8 @@ INVENTORY_FILE="$ANSIBLE_DIR/inventory.ini"
 ENV_FILE_PATH="${ENV_FILE:-}"
 GIT_KEY_PATH="${GIT_KEY:-}"
 DB_SEED_FILE_PATH="${DB_SEED_FILE:-}"
+CF_ORIGIN_CERT_PATH="${CF_ORIGIN_CERT:-}"
+CF_ORIGIN_KEY_PATH="${CF_ORIGIN_KEY:-}"
 
 ROOT_DIR="$(pwd)"
 if [ -n "$ENV_FILE_PATH" ] && [[ "$ENV_FILE_PATH" != /* ]]; then
@@ -21,6 +23,12 @@ if [ -n "$GIT_KEY_PATH" ] && [[ "$GIT_KEY_PATH" != /* ]]; then
 fi
 if [ -n "$DB_SEED_FILE_PATH" ] && [[ "$DB_SEED_FILE_PATH" != /* ]]; then
   DB_SEED_FILE_PATH="$ROOT_DIR/$DB_SEED_FILE_PATH"
+fi
+if [ -n "$CF_ORIGIN_CERT_PATH" ] && [[ "$CF_ORIGIN_CERT_PATH" != /* ]]; then
+  CF_ORIGIN_CERT_PATH="$ROOT_DIR/$CF_ORIGIN_CERT_PATH"
+fi
+if [ -n "$CF_ORIGIN_KEY_PATH" ] && [[ "$CF_ORIGIN_KEY_PATH" != /* ]]; then
+  CF_ORIGIN_KEY_PATH="$ROOT_DIR/$CF_ORIGIN_KEY_PATH"
 fi
 
 SITE="${SITE:-default}"
@@ -147,6 +155,8 @@ EOL
     -e "local_env_file=$ENV_FILE_PATH" \
     ${DB_SEED_FILE_PATH:+-e "local_db_seed_file=$DB_SEED_FILE_PATH"} \
     ${GIT_KEY_PATH:+-e "local_git_ssh_key_file=$GIT_KEY_PATH"} \
+    ${CF_ORIGIN_CERT_PATH:+-e "local_cf_origin_cert_file=$CF_ORIGIN_CERT_PATH"} \
+    ${CF_ORIGIN_KEY_PATH:+-e "local_cf_origin_key_file=$CF_ORIGIN_KEY_PATH"} \
     "$ANSIBLE_DIR/site.yml"
 else
   echo "⚠️  $ANSIBLE_DIR/site.yml not found. Terraform finished, skipping Ansible."

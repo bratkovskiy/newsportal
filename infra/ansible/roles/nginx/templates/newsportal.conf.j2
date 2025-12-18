@@ -1,6 +1,16 @@
+{% if nginx_enable_ssl | default(false) | bool %}
 server {
   listen 80;
-  server_name _;
+  server_name {{ nginx_server_name | default('_') }};
+  return 301 https://$host$request_uri;
+}
+
+server {
+  listen 443 ssl;
+  server_name {{ nginx_server_name | default('_') }};
+
+  ssl_certificate {{ remote_cf_origin_cert_file | default('/etc/nginx/ssl/cloudflare_origin.crt') }};
+  ssl_certificate_key {{ remote_cf_origin_key_file | default('/etc/nginx/ssl/cloudflare_origin.key') }};
 
   client_max_body_size 50m;
 
@@ -18,6 +28,28 @@ server {
     application/xml
     application/rss+xml
     image/svg+xml;
+{% else %}
+server {
+  listen 80;
+  server_name {{ nginx_server_name | default('_') }};
+
+  client_max_body_size 50m;
+
+  gzip on;
+  gzip_vary on;
+  gzip_proxied any;
+  gzip_comp_level 6;
+  gzip_min_length 1024;
+  gzip_types
+    text/plain
+    text/css
+    text/javascript
+    application/javascript
+    application/json
+    application/xml
+    application/rss+xml
+    image/svg+xml;
+{% endif %}
 
   # Proxy all Payload admin routes to the CMS (Next.js app) on port 3000
   # /admin and /admin/... are handled here

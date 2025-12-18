@@ -9,3 +9,12 @@ compose_cmd: "docker compose"
 
 local_git_ssh_key_file: ""
 remote_git_ssh_key_file: "/home/{{ app_user }}/.ssh/github_deploy_key"
+
+nginx_server_name: "modareview.com www.modareview.com"
+public_url: "http://modareview.com"
+
+local_cf_origin_cert_file: ""
+local_cf_origin_key_file: ""
+remote_cf_origin_cert_file: "/etc/nginx/ssl/cloudflare_origin.crt"
+remote_cf_origin_key_file: "/etc/nginx/ssl/cloudflare_origin.key"
+nginx_enable_ssl: "{{ (local_cf_origin_cert_file | length > 0) and (local_cf_origin_key_file | length > 0) }}"

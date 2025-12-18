@@ -4,6 +4,35 @@
     name: nginx
     state: present
 
+- name: Ensure nginx ssl directory exists
+  file:
+    path: /etc/nginx/ssl
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: nginx_enable_ssl | default(false) | bool
+
+- name: Copy Cloudflare Origin certificate
+  copy:
+    src: "{{ local_cf_origin_cert_file }}"
+    dest: "{{ remote_cf_origin_cert_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: nginx_enable_ssl | default(false) | bool
+  notify: reload nginx
+
+- name: Copy Cloudflare Origin private key
+  copy:
+    src: "{{ local_cf_origin_key_file }}"
+    dest: "{{ remote_cf_origin_key_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+  when: nginx_enable_ssl | default(false) | bool
+  notify: reload nginx
+
 - name: Configure nginx site
   template:
     src: newsportal.conf.j2
