@@ -58,3 +58,27 @@
 .overflow-hidden {
   overflow: hidden;
 }
+
+/* Article design tokens */
+:root {
+  --cream:        #FAF8F5;
+  --stone:        #E8E3DC;
+  --warm-gray:    #9A9189;
+  --charcoal:     #2A2520;
+  --ink:          #1A1612;
+  --accent:       #C4956A;
+  --accent-light: #F0E6D8;
+  --text:         #3D3530;
+  --text-light:   #6B6059;
+  --line:         #E0D9D0;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --radius-sm:    3px;
+  --radius-md:    6px;
+  --ease-out:     cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Fix table width inside prose */
+.article-body table {
+  width: 100% !important;
+  display: table !important;
+}

@@ -18,7 +18,8 @@ const {
 } = Astro.props;
 
 const dateLocale = locale === 'en' ? 'en-US' : 'ru-RU';
-const formattedDate = new Intl.DateTimeFormat(dateLocale, { dateStyle: 'long' }).format(publishedDate);
+const _d = publishedDate instanceof Date ? publishedDate : new Date(publishedDate);
+const formattedDate = new Intl.DateTimeFormat(dateLocale, { dateStyle: 'long' }).format(_d);
 
 // Generate SEO meta tags
 const metaTitle = await generateArticleTitle(title);
@@ -27,7 +28,7 @@ const metaDescription = await generateArticleDescription(excerpt);
 
 <BaseLayout title={metaTitle} description={metaDescription}>
   <MainColumns>
-    <article class="max-w-3xl mx-auto py-8 lg:py-10">
+    <article class="max-w-4xl mx-auto py-8 lg:py-10">
       <div class="mb-6">
         <slot name="breadcrumbs" />
       </div>
@@ -43,9 +44,9 @@ const metaDescription = await generateArticleDescription(excerpt);
           )}
         </div>
         <div class="flex flex-wrap items-center gap-3 text-xs text-muted">
-          <span>{author}</span>
+          <span>{typeof author === "object" ? author?.name : author}</span>
           <span class="w-px h-3 bg-border" aria-hidden="true"></span>
-          <time datetime={publishedDate.toISOString()}>{formattedDate}</time>
+          <time datetime={publishedDate instanceof Date ? publishedDate.toISOString() : publishedDate}>{formattedDate}</time>
         </div>
         <div class="mt-8 rounded-card overflow-hidden shadow-card">
           <img
@@ -65,7 +66,7 @@ const metaDescription = await generateArticleDescription(excerpt);
         )}
       </header>
 
-      <div class="prose prose-lg article-prose max-w-2xl">
+      <div class="prose prose-lg article-prose max-w-4xl w-full">
         <slot /> <!-- Article content goes here -->
       </div>
       

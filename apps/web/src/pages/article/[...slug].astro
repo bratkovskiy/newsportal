@@ -2,7 +2,7 @@
 // apps/web/src/pages/article/[...slug].astro
 // Страница статьи с новым дизайном
 
-import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import ArticleLayout from '../../layouts/Article.astro';
 import ArticleBody from '../../components/article/ArticleBody.astro';
 import { getCmsEnv } from '../../utils/cmsEnv';
 
@@ -107,8 +107,9 @@ if (!payloadArticle) {
   Astro.response.status = 404;
 }
 
-const publishedDate = payloadArticle?.publishedDate
-  ? new Date(payloadArticle.publishedDate)
+const _rawDate = payloadArticle?.publishedDate;
+const publishedDate = (_rawDate && !isNaN(new Date(_rawDate).getTime()))
+  ? new Date(_rawDate)
   : new Date();
 
 const firstCategory = Array.isArray(payloadArticle?.categories) && payloadArticle.categories.length > 0
@@ -320,7 +321,7 @@ const metaDescription = payloadArticle?.excerpt ?? '';
     description={metaDescription}
     category={category}
     author={author}
-    publishedDate={publishedDate.toISOString()}
+    publishedDate={publishedDate instanceof Date ? publishedDate.toISOString() : publishedDate}
     readingTime={readingTime}
     coverImage={coverImageUrl}
     coverAlt={coverImageAlt}

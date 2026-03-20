@@ -1,0 +1,176 @@
+---
+---
+<div class="article-body">
+  <slot />
+</div>
+
+<style is:global>
+  .article-body p {
+    font-size: 1rem;
+    line-height: 1.85;
+    color: var(--text);
+    margin-bottom: 1.4rem;
+  }
+  .article-body > p:first-of-type {
+    font-size: 1.08rem;
+    color: var(--charcoal);
+    line-height: 1.8;
+  }
+  .article-body h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 3vw, 1.6rem);
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.28;
+    margin: 2.75rem 0 1rem;
+    padding-bottom: .55rem;
+    border-bottom: 2px solid var(--accent);
+  }
+  .article-body h3 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--ink);
+    margin: 1.75rem 0 .6rem;
+  }
+  .article-body h4 {
+    font-size: .85rem;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--warm-gray);
+    margin: 1.5rem 0 .5rem;
+  }
+  .article-body a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 3px;
+    transition: text-decoration-color .15s;
+  }
+  .article-body a:hover { text-decoration-color: var(--accent); }
+  .article-body strong { font-weight: 500; color: var(--ink); }
+  .article-body em { font-style: italic; color: var(--charcoal); }
+  .article-body ul {
+    list-style: none;
+    margin: 1rem 0 1.5rem;
+    padding: 0;
+  }
+  .article-body ul li {
+    position: relative;
+    padding-left: 1.4rem;
+    margin-bottom: .45rem;
+    font-size: .97rem;
+    line-height: 1.72;
+  }
+  .article-body ul li::before {
+    content: '';
+    position: absolute;
+    left: 0; top: .68em;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .article-body ol {
+    list-style: none;
+    counter-reset: ol-counter;
+    margin: 1rem 0 1.5rem;
+    padding: 0;
+  }
+  .article-body ol li {
+    counter-increment: ol-counter;
+    position: relative;
+    padding-left: 1.8rem;
+    margin-bottom: .45rem;
+    font-size: .97rem;
+    line-height: 1.72;
+  }
+  .article-body ol li::before {
+    content: counter(ol-counter);
+    position: absolute;
+    left: 0; top: 0;
+    font-family: var(--font-display);
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.85;
+  }
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+    font-size: .88rem;
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .article-body caption {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: left;
+    padding-bottom: .75rem;
+    caption-side: top;
+  }
+  .article-body thead th {
+    background: var(--ink);
+    color: var(--cream);
+    font-size: .68rem;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: .75rem 1rem;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .article-body thead th:first-child { border-radius: 3px 0 0 0; }
+  .article-body thead th:last-child  { border-radius: 0 3px 0 0; }
+  .article-body tbody tr:nth-child(even) td { background: var(--accent-light); }
+  .article-body tbody tr:hover td { background: var(--stone); }
+  .article-body tbody td {
+    padding: .7rem 1rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  .article-body tbody td:first-child { font-weight: 500; color: var(--ink); white-space: nowrap; }
+  .article-body tbody tr:last-child td { border-bottom: 2px solid var(--ink); }
+  .article-body figure { margin: 2rem -1.25rem; }
+  .article-body figure img { width: 100%; display: block; aspect-ratio: 4/3; object-fit: cover; }
+  .article-body figcaption { font-size: .72rem; color: var(--warm-gray); font-style: italic; padding: .5rem 1.25rem 0; }
+  .article-body img { width: 100%; height: auto; margin: 1.5rem 0; }
+  .article-body blockquote {
+    margin: 2.5rem 0;
+    padding: 1.25rem 1.5rem 1.25rem 1.75rem;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-light);
+  }
+  .article-body blockquote p {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-style: italic;
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.6;
+  }
+  .article-body hr { border: none; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+  /* Таблицы на полную ширину контейнера */
+  .article-body table {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .prose .article-body table,
+  .prose table {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  @media (max-width: 600px) {
+    .article-body h2 { font-size: 1.25rem; }
+    .article-body h3 { font-size: 1rem; }
+    .article-body figure { margin-left: -1.25rem; margin-right: -1.25rem; }
+    .article-body blockquote { padding: 1rem 1rem 1rem 1.25rem; }
+  }
+</style>
