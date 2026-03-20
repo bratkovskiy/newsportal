@@ -318,16 +318,26 @@ const metaDescription = payloadArticle?.excerpt ?? '';
 {payloadArticle ? (
   <ArticleLayout
     title={metaTitle}
-    description={metaDescription}
+    excerpt={metaDescription}
     category={category}
     author={author}
     publishedDate={publishedDate instanceof Date ? publishedDate.toISOString() : publishedDate}
-    readingTime={readingTime}
     coverImage={coverImageUrl}
-    coverAlt={coverImageAlt}
-    slug={slugParam}
-    relatedArticles={relatedArticles}
+    coverImageAlt={coverImageAlt}
+    fallbackImageUrl={PLACEHOLDER_IMAGE_URL}
   >
+    <nav slot="breadcrumbs" class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Главная</a>
+      <span aria-hidden="true">/</span>
+      {category.slug ? (
+        <a href={`/category/${category.slug}`}>{category.name}</a>
+      ) : (
+        <span>{category.name}</span>
+      )}
+      <span aria-hidden="true">/</span>
+      <span class="breadcrumb-current">{metaTitle}</span>
+    </nav>
+
     <ArticleBody>
       <Fragment set:html={articleHtml} />
     </ArticleBody>

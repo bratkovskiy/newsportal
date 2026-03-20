@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Wear Neutral Colors Without Looking Boring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #FAF8F5;
+    --stone: #E8E3DC;
+    --warm-gray: #9A9189;
+    --charcoal: #2A2520;
+    --ink: #1A1612;
+    --accent: #C4956A;
+    --accent-light: #F0E6D8;
+    --text: #3D3530;
+    --text-light: #6B6059;
+    --line: #E0D9D0;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --max-w: 720px;
+    --max-w-wide: 1100px;
+  }
+
+  html { font-size: 17px; }
+  body {
+    background: var(--cream);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-weight: 300;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--cream);
+    border-bottom: 1px solid var(--line);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+  .nav-logo {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    letter-spacing: .08em;
+    color: var(--ink);
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+  .nav-cats { display: flex; gap: 1.5rem; list-style: none; }
+  .nav-cats a {
+    font-size: .75rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--text-light);
+    text-decoration: none; transition: color .2s;
+  }
+  .nav-cats a:hover { color: var(--accent); }
+
+  /* ─── ARTICLE WRAPPER ─── */
+  article { max-width: var(--max-w); margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+
+  /* ─── BREADCRUMB ─── */
+  .breadcrumb {
+    display: flex; gap: .5rem; align-items: center;
+    font-size: .72rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--warm-gray);
+    margin-bottom: 1.5rem;
+  }
+  .breadcrumb a { color: var(--accent); text-decoration: none; }
+  .breadcrumb span { color: var(--line); }
+
+  /* ─── HEADER ─── */
+  .article-header { margin-bottom: 2.5rem; }
+  .article-cat {
+    display: inline-block;
+    font-size: .68rem; font-weight: 500; letter-spacing: .15em;
+    text-transform: uppercase; color: var(--accent);
+    background: var(--accent-light);
+    padding: .25rem .75rem;
+    border-radius: 2px;
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 4vw, 2.6rem);
+    font-weight: 700;
+    line-height: 1.22;
+    color: var(--ink);
+    margin-bottom: 1.25rem;
+    letter-spacing: -.01em;
+  }
+  .article-meta {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    font-size: .8rem;
+    color: var(--text-light);
+  }
+  .author-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--stone); overflow: hidden; flex-shrink: 0;
+  }
+  .author-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .meta-author { font-weight: 500; color: var(--text); }
+  .meta-sep { color: var(--line); }
+  .meta-reading { color: var(--warm-gray); }
+
+  /* ─── COVER IMAGE ─── */
+  .cover-wrap {
+    margin: 2rem -1.5rem;
+    position: relative;
+  }
+  .cover-wrap img {
+    width: 100%; aspect-ratio: 16/9;
+    object-fit: cover; display: block;
+  }
+  .cover-caption {
+    font-size: .72rem; color: var(--warm-gray);
+    padding: .5rem 1.5rem;
+    font-style: italic;
+  }
+
+  /* ─── BODY TEXT ─── */
+  .article-body p {
+    margin-bottom: 1.4rem;
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  /* ─── HEADINGS ─── */
+  .article-body h2 {
+    font-family: var(--font-display);
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.3;
+    margin: 2.75rem 0 1rem;
+    padding-bottom: .6rem;
+    border-bottom: 2px solid var(--accent);
+  }
+  .article-body h3 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--ink);
+    margin: 1.75rem 0 .6rem;
+  }
+
+  /* ─── INLINE IMAGE ─── */
+  .article-body figure {
+    margin: 2rem -1.5rem;
+  }
+  .article-body figure img {
+    width: 100%; display: block;
+    aspect-ratio: 4/3; object-fit: cover;
+  }
+  .article-body figcaption {
+    font-size: .72rem; color: var(--warm-gray);
+    padding: .5rem 1.5rem;
+    font-style: italic;
+  }
+
+  /* ─── TABLE ─── */
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+    font-size: .9rem;
+  }
+  .article-body table caption {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: left;
+    padding-bottom: .75rem;
+    caption-side: top;
+  }
+  .article-body thead th {
+    background: var(--ink);
+    color: var(--cream);
+    font-size: .72rem;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: .75rem 1rem;
+    text-align: left;
+  }
+  .article-body thead th:first-child { border-radius: 3px 0 0 0; }
+  .article-body thead th:last-child  { border-radius: 0 3px 0 0; }
+  .article-body tbody tr:nth-child(even) td { background: var(--accent-light); }
+  .article-body tbody td {
+    padding: .7rem 1rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  .article-body tbody td:first-child { font-weight: 500; color: var(--ink); }
+
+  /* ─── LISTS ─── */
+  .article-body ul, .article-body ol {
+    margin: 1rem 0 1.4rem 0;
+    padding-left: 0;
+    list-style: none;
+  }
+  .article-body ul li, .article-body ol li {
+    position: relative;
+    padding-left: 1.4rem;
+    margin-bottom: .45rem;
+    font-size: .97rem;
+    line-height: 1.7;
+  }
+  .article-body ul li::before {
+    content: '';
+    position: absolute; left: 0; top: .65em;
+    width: 6px; height: 6px;
+    border-radius: 50%; background: var(--accent);
+  }
+  .article-body ol { counter-reset: ol; }
+  .article-body ol li { counter-increment: ol; }
+  .article-body ol li::before {
+    content: counter(ol);
+    position: absolute; left: 0; top: 0;
+    font-size: .75rem; font-weight: 500;
+    color: var(--accent);
+    line-height: 1.9;
+  }
+
+  /* ─── BLOCKQUOTE / PULLQUOTE ─── */
+  .article-body blockquote {
+    margin: 2.5rem 0;
+    padding: 1.5rem 1.5rem 1.5rem 2rem;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-light);
+  }
+  .article-body blockquote p {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-style: italic;
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ─── FAQ ─── */
+  .faq-section { margin: 3rem 0; }
+  .faq-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.55rem; font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+    padding-bottom: .6rem;
+    border-bottom: 2px solid var(--accent);
+  }
+  .faq-item {
+    border-bottom: 1px solid var(--line);
+    padding: 1rem 0;
+  }
+  .faq-q {
+    font-weight: 500;
+    font-size: .95rem;
+    color: var(--ink);
+    margin-bottom: .4rem;
+    display: flex; gap: .75rem;
+  }
+  .faq-q::before {
+    content: 'Q';
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-style: italic;
+    color: var(--accent);
+    font-size: 1rem;
+  }
+  .faq-a {
+    font-size: .9rem;
+    color: var(--text-light);
+    padding-left: 1.4rem;
+    line-height: 1.7;
+  }
+
+  /* ─── CONCLUSION BOX ─── */
+  .conclusion-box {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 2rem;
+    margin: 3rem 0;
+    border-radius: 4px;
+  }
+  .conclusion-box h2 {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    color: var(--accent);
+  }
+  .conclusion-box p { color: #C8BFB5; font-size: .93rem; margin-bottom: .8rem; }
+
+  /* ─── RELATED ─── */
+  .related { margin-top: 4rem; }
+  .related h3 {
+    font-size: .72rem; font-weight: 500; letter-spacing: .15em;
+    text-transform: uppercase; color: var(--warm-gray);
+    margin-bottom: 1.5rem;
+    padding-bottom: .6rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .related-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .related-card { text-decoration: none; color: inherit; }
+  .related-card-img {
+    aspect-ratio: 3/2; background: var(--stone);
+    overflow: hidden; margin-bottom: .6rem;
+  }
+  .related-card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s; }
+  .related-card:hover .related-card-img img { transform: scale(1.04); }
+  .related-card-cat {
+    font-size: .65rem; font-weight: 500; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  .related-card-title {
+    font-family: var(--font-display);
+    font-size: .95rem; font-weight: 700;
+    color: var(--ink); line-height: 1.35;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">Moda Review</a>
+  <ul class="nav-cats">
+    <li><a href="#">Мода</a></li>
+    <li><a href="#">Стиль</a></li>
+    <li><a href="#">Красота</a></li>
+    <li><a href="#">Тренды</a></li>
+    <li><a href="#">Новости</a></li>
+  </ul>
+</nav>
+
+<article>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb">
+    <a href="/">Главная</a>
+    <span>/</span>
+    <a href="/category/style">Стиль</a>
+    <span>/</span>
+    How to Wear Neutral Colors
+  </nav>
+
+  <!-- Header -->
+  <header class="article-header">
+    <span class="article-cat">Colors &amp; Patterns</span>
+    <h1>How to Wear Neutral Colors Without Looking Boring</h1>
+    <div class="article-meta">
+      <div class="author-avatar">
+        <img src="https://i.pravatar.cc/72?img=47" alt="Rachel Sloan">
+      </div>
+      <div>
+        <div class="meta-author">Rachel Sloan</div>
+        <div>March 18, 2026</div>
+      </div>
+      <span class="meta-sep">·</span>
+      <span class="meta-reading">8 min read</span>
+    </div>
+  </header>
+
+  <!-- Cover -->
+  <div class="cover-wrap">
+    <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1200&h=675&fit=crop" alt="Neutral color outfit flat lay with beige, white and camel tones">
+    <div class="cover-caption">Photo: Unsplash / Fashion editorial</div>
+  </div>
+
+  <!-- Body -->
+  <div class="article-body">
+
+    <p>Neutral colors — beige, camel, ivory, grey, taupe — are the backbone of any well-edited wardrobe. But there's a fine line between effortlessly chic and washed-out monotony. The secret? It's all about texture, proportion, and knowing which neutrals actually work together.</p>
+
+    <p>In this guide, we'll show you exactly how to build neutral outfits that feel intentional, modern, and anything but boring.</p>
+
+    <h2>Understanding Neutral Colors in Fashion</h2>
+
+    <p>Not all neutrals are equal. Warm neutrals — camel, sand, ivory, terracotta — sit on the yellow-red side of the spectrum. Cool neutrals — slate grey, charcoal, pure white, stone — lean blue or purple. Mixing warm and cool neutrals without intention is the most common reason monochrome looks fall flat.</p>
+
+    <figure>
+      <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&h=600&fit=crop" alt="Woman wearing all-beige neutral outfit with camel coat">
+      <figcaption>All-warm neutral tones create a cohesive, editorial feel</figcaption>
+    </figure>
+
+    <h2>Decision-Making Table for Neutral Colors</h2>
+
+    <table>
+      <caption>Do's vs Don'ts: Neutral Color Combinations</caption>
+      <thead>
+        <tr>
+          <th>Combination</th>
+          <th>Works?</th>
+          <th>Why</th>
+          <th>Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Ivory + Camel</td>
+          <td>✓ Yes</td>
+          <td>Both warm-toned, natural contrast</td>
+          <td>Ivory blouse + camel trousers</td>
+        </tr>
+        <tr>
+          <td>Charcoal + Slate</td>
+          <td>✓ Yes</td>
+          <td>Tonal cool palette, clean</td>
+          <td>Slate blazer + charcoal pants</td>
+        </tr>
+        <tr>
+          <td>Beige + Cool Grey</td>
+          <td>⚠ Careful</td>
+          <td>Mixed temperatures clash</td>
+          <td>Add texture to separate them</td>
+        </tr>
+        <tr>
+          <td>White + Off-white</td>
+          <td>✗ Avoid</td>
+          <td>Looks like a matching mistake</td>
+          <td>Choose one or go tonal on purpose</td>
+        </tr>
+        <tr>
+          <td>Camel + Chocolate</td>
+          <td>✓ Yes</td>
+          <td>Rich depth, same family</td>
+          <td>Camel coat + brown boots</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Styling Tips for Neutral Colors</h2>
+
+    <p>The key to making neutrals work is layering — not just garments, but textures. A silk blouse, a cashmere knit, a structured linen blazer: same colour family, completely different energy.</p>
+
+    <h3>Play with texture contrast</h3>
+    <ul>
+      <li>Pair matte with shiny — a satin skirt against a chunky wool sweater</li>
+      <li>Combine structured and fluid — a crisp blazer over a floaty blouse</li>
+      <li>Mix weights — heavy outerwear, lighter underneath</li>
+      <li>Use leather or suede as a grounding element</li>
+    </ul>
+
+    <h3>Use proportion to create interest</h3>
+    <ol>
+      <li>Balance oversized tops with slim bottoms (or vice versa)</li>
+      <li>Try the one-third/two-thirds rule for layering lengths</li>
+      <li>Use belts to define the waist in long neutral looks</li>
+      <li>Vary hemlines: cropped top + midi skirt is a reliable neutral formula</li>
+    </ol>
+
+    <figure>
+      <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=600&fit=crop" alt="Texture layering in neutral outfit - cashmere and silk">
+      <figcaption>Texture contrast keeps a monochromatic look visually rich</figcaption>
+    </figure>
+
+    <blockquote>
+      <p>"A neutral outfit with three textures will always outperform a colourful outfit with none."</p>
+    </blockquote>
+
+    <h2>Accessorising Neutral Outfits</h2>
+
+    <p>Accessories can either blend into a neutral look or act as a quiet focal point. Both are valid — but it must be a choice, not an accident.</p>
+
+    <ul>
+      <li><strong>Bags:</strong> Tan leather or cognac are the safest investment for any neutral wardrobe</li>
+      <li><strong>Shoes:</strong> Nude heels extend the leg; white trainers modernise any look instantly</li>
+      <li><strong>Jewellery:</strong> Gold warms beige palettes; silver cools grey ones</li>
+      <li><strong>Belts:</strong> A contrast-toned belt (slightly darker or lighter) structures the silhouette</li>
+      <li><strong>Scarves:</strong> A print scarf in the same tonal family adds pattern without breaking the palette</li>
+    </ul>
+
+    <h2>Creating a Capsule Wardrobe with Neutrals</h2>
+
+    <p>The real power of neutral dressing is multiplied outfits from fewer pieces. A capsule approach means every item works with every other item in your wardrobe.</p>
+
+    <table>
+      <caption>The 10-Piece Neutral Capsule</caption>
+      <thead>
+        <tr><th>Piece</th><th>Color</th><th>Pairs with</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Trench coat</td><td>Camel</td><td>Everything</td></tr>
+        <tr><td>Tailored trousers</td><td>Charcoal</td><td>Tops 1–5</td></tr>
+        <tr><td>Slim trousers</td><td>Ivory</td><td>Tops 1–5, coats</td></tr>
+        <tr><td>Cashmere knit</td><td>Oatmeal</td><td>All bottoms</td></tr>
+        <tr><td>White shirt</td><td>Crisp white</td><td>All bottoms</td></tr>
+        <tr><td>Silk blouse</td><td>Stone</td><td>All bottoms</td></tr>
+        <tr><td>Midi skirt</td><td>Sand</td><td>Knit, shirt, blouse</td></tr>
+        <tr><td>Jeans</td><td>Light wash</td><td>All tops</td></tr>
+        <tr><td>Leather bag</td><td>Cognac</td><td>Everything</td></tr>
+        <tr><td>Ankle boots</td><td>Tan</td><td>Everything</td></tr>
+      </tbody>
+    </table>
+
+    <!-- FAQ -->
+    <div class="faq-section">
+      <h2>Frequently Asked Questions</h2>
+
+      <div class="faq-item">
+        <div class="faq-q">Can I mix warm and cool neutrals in one outfit?</div>
+        <div class="faq-a">Yes, but intentionally. Use texture and proportion to separate them visually. A rough-knit warm beige sweater and cool grey tailored trousers work because the contrast is obvious and deliberate.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">What's the best neutral color to start with?</div>
+        <div class="faq-a">Camel. It works with virtually every other neutral, photographs beautifully, and suits most skin tones. A camel coat is the single most versatile investment in neutral dressing.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">How do I stop a neutral outfit from looking dull?</div>
+        <div class="faq-a">Focus on three elements: texture contrast, varied proportions, and one intentional focal point (a great bag, interesting shoes, or statement jewellery). Dull neutrals lack all three.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Are black and white considered neutrals?</div>
+        <div class="faq-a">White yes, black is debated. Pure black is technically achromatic, not a warm neutral. It can anchor a neutral palette but use it deliberately — it will always be the darkest element and draw the eye.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">How many neutrals should I have in my wardrobe?</div>
+        <div class="faq-a">Aim for 2–3 core neutrals that genuinely work together. More than that and your wardrobe becomes muddy. Most stylists recommend building around a primary (e.g. camel), a light neutral (ivory/white), and a dark neutral (charcoal/navy).</div>
+      </div>
+    </div>
+
+    <!-- Conclusion -->
+    <div class="conclusion-box">
+      <h2>Key Takeaways</h2>
+      <p>Neutral dressing is never about playing it safe — it's about playing it smart. The most impactful neutral looks are built on texture contrast, temperature consistency, and deliberate proportion.</p>
+      <p>Start with a camel coat, invest in different fabric weights in the same tonal family, and let your accessories do the quiet talking.</p>
+    </div>
+
+    <!-- Related -->
+    <div class="related">
+      <h3>You might also like</h3>
+      <div class="related-grid">
+        <a class="related-card" href="#">
+          <div class="related-card-img">
+            <img src="https://images.unsplash.com/photo-1581044777550-4cfa60707c03?w=600&h=400&fit=crop" alt="Apple body shape outfit ideas">
+          </div>
+          <div class="related-card-cat">Body Shape Guide</div>
+          <div class="related-card-title">Best Outfit Ideas for Apple Body Shape in Summer</div>
+        </a>
+        <a class="related-card" href="#">
+          <div class="related-card-img">
+            <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop" alt="Capsule wardrobe basics">
+          </div>
+          <div class="related-card-cat">Style</div>
+          <div class="related-card-title">How to Build a Capsule Wardrobe That Actually Works</div>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</article>
+
+</body>
+</html>

@@ -1,0 +1,353 @@
+---
+// apps/web/src/components/article/ArticleBody.astro
+// Обёртка для HTML-контента из Payload CMS (Lexical editor)
+// Все стили ниже применяются к .article-body через CSS descendant selectors
+// — это позволяет стилизовать любой HTML, который генерирует Lexical
+---
+
+<div class="article-body">
+  <slot />
+</div>
+
+<style>
+  /* ════════════════════════════════════════════════════════════
+     ARTICLE BODY — все стили для HTML из Lexical/Payload CMS
+     ════════════════════════════════════════════════════════════ */
+
+  .article-body {
+    /* Ничего лишнего на корневом уровне */
+  }
+
+  /* ── Параграфы ──────────────────────────────────────────── */
+  .article-body p {
+    font-size: 1rem;
+    line-height: 1.85;
+    color: var(--text);
+    margin-bottom: 1.4rem;
+  }
+
+  /* Первый параграф чуть крупнее — лид */
+  .article-body > p:first-of-type {
+    font-size: 1.08rem;
+    color: var(--charcoal);
+    line-height: 1.8;
+  }
+
+  /* ── Заголовки ──────────────────────────────────────────── */
+  .article-body h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 3vw, 1.6rem);
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.28;
+    margin: 2.75rem 0 1rem;
+    padding-bottom: .55rem;
+    border-bottom: 2px solid var(--accent);
+    letter-spacing: -.01em;
+  }
+
+  .article-body h3 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--ink);
+    margin: 1.75rem 0 .6rem;
+    line-height: 1.4;
+  }
+
+  .article-body h4 {
+    font-size: .85rem;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--warm-gray);
+    margin: 1.5rem 0 .5rem;
+  }
+
+  /* ── Ссылки ─────────────────────────────────────────────── */
+  .article-body a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 3px;
+    transition: text-decoration-color .15s;
+  }
+  .article-body a:hover {
+    text-decoration-color: var(--accent);
+  }
+
+  /* ── Жирный / курсив ────────────────────────────────────── */
+  .article-body strong {
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .article-body em {
+    font-style: italic;
+    color: var(--charcoal);
+  }
+
+  /* ── Маркированный список ───────────────────────────────── */
+  .article-body ul {
+    list-style: none;
+    margin: 1rem 0 1.5rem;
+    padding: 0;
+  }
+  .article-body ul li {
+    position: relative;
+    padding-left: 1.4rem;
+    margin-bottom: .45rem;
+    font-size: .97rem;
+    line-height: 1.72;
+    color: var(--text);
+  }
+  .article-body ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: .68em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  /* Вложенные ul */
+  .article-body ul ul {
+    margin: .3rem 0 .3rem;
+  }
+  .article-body ul ul li::before {
+    background: none;
+    border: 1.5px solid var(--accent);
+  }
+
+  /* ── Нумерованный список ────────────────────────────────── */
+  .article-body ol {
+    list-style: none;
+    counter-reset: ol-counter;
+    margin: 1rem 0 1.5rem;
+    padding: 0;
+  }
+  .article-body ol li {
+    counter-increment: ol-counter;
+    position: relative;
+    padding-left: 1.8rem;
+    margin-bottom: .45rem;
+    font-size: .97rem;
+    line-height: 1.72;
+  }
+  .article-body ol li::before {
+    content: counter(ol-counter);
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-family: var(--font-display);
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.85;
+    width: 1.2rem;
+    text-align: right;
+  }
+
+  /* ── Таблицы ────────────────────────────────────────────── */
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+    font-size: .88rem;
+    /* Горизонтальный скролл на мобиле */
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Заголовок таблицы (caption) */
+  .article-body caption {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: left;
+    padding-bottom: .75rem;
+    caption-side: top;
+  }
+
+  /* Шапка */
+  .article-body thead th {
+    background: var(--ink);
+    color: var(--cream);
+    font-size: .68rem;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: .75rem 1rem;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .article-body thead th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+  .article-body thead th:last-child  { border-radius: 0 var(--radius-sm) 0 0; }
+
+  /* Строки */
+  .article-body tbody tr { transition: background .1s; }
+  .article-body tbody tr:nth-child(even) td { background: var(--accent-light); }
+  .article-body tbody tr:hover td { background: var(--stone); }
+
+  .article-body tbody td {
+    padding: .7rem 1rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .article-body tbody td:first-child {
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* Последняя строка без нижней границы */
+  .article-body tbody tr:last-child td {
+    border-bottom: 2px solid var(--ink);
+  }
+
+  /* ── Изображения (figure + img) ─────────────────────────── */
+  .article-body figure {
+    margin: 2rem -1.25rem;
+  }
+  .article-body figure img {
+    width: 100%;
+    display: block;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+  }
+  .article-body figcaption {
+    font-size: .72rem;
+    color: var(--warm-gray);
+    font-style: italic;
+    padding: .5rem 1.25rem 0;
+    line-height: 1.5;
+  }
+
+  /* Одиночный img без figure */
+  .article-body img {
+    width: 100%;
+    height: auto;
+    margin: 1.5rem 0;
+  }
+
+  /* ── Цитата / Pullquote ─────────────────────────────────── */
+  .article-body blockquote {
+    margin: 2.5rem 0;
+    padding: 1.25rem 1.5rem 1.25rem 1.75rem;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-light);
+  }
+  .article-body blockquote p {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-style: italic;
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.6;
+  }
+  .article-body blockquote p + p {
+    margin-top: .75rem;
+  }
+  .article-body blockquote cite {
+    display: block;
+    margin-top: .75rem;
+    font-size: .75rem;
+    font-style: normal;
+    font-weight: 500;
+    letter-spacing: .08em;
+    color: var(--warm-gray);
+    text-transform: uppercase;
+  }
+
+  /* ── Горизонтальная линия ───────────────────────────────── */
+  .article-body hr {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 2.5rem 0;
+  }
+
+  /* ── Inline code ────────────────────────────────────────── */
+  .article-body code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: .85em;
+    background: var(--stone);
+    padding: .15em .4em;
+    border-radius: 3px;
+    color: var(--charcoal);
+  }
+
+  /* ── FAQ секция (если приходит из CMS как HTML) ──────────── */
+  /* Ожидаемая разметка: <div class="faq"> <div class="faq-item"> ... */
+  .article-body .faq {
+    margin: 3rem 0;
+  }
+  .article-body .faq-item {
+    border-bottom: 1px solid var(--line);
+    padding: 1rem 0;
+  }
+  .article-body .faq-q {
+    font-weight: 500;
+    font-size: .95rem;
+    color: var(--ink);
+    margin-bottom: .4rem;
+    display: flex;
+    gap: .65rem;
+    line-height: 1.5;
+  }
+  .article-body .faq-q::before {
+    content: 'Q';
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-style: italic;
+    color: var(--accent);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .article-body .faq-a {
+    font-size: .9rem;
+    color: var(--text-light);
+    padding-left: 1.35rem;
+    line-height: 1.72;
+    margin: 0;
+  }
+
+  /* ── Conclusion box (если приходит из CMS) ──────────────── */
+  .article-body .conclusion-box {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 1.75rem 2rem;
+    margin: 3rem 0;
+    border-radius: var(--radius-md);
+  }
+  .article-body .conclusion-box h2 {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent);
+    border: none;
+    padding: 0;
+    margin: 0 0 .85rem;
+  }
+  .article-body .conclusion-box p {
+    color: #C8BFB5;
+    font-size: .93rem;
+    margin-bottom: .75rem;
+  }
+  .article-body .conclusion-box p:last-child { margin-bottom: 0; }
+
+  /* ── Адаптив ─────────────────────────────────────────────── */
+  @media (max-width: 600px) {
+    .article-body h2 { font-size: 1.25rem; }
+    .article-body h3 { font-size: 1rem; }
+    .article-body figure { margin-left: -1.25rem; margin-right: -1.25rem; }
+    .article-body blockquote { padding: 1rem 1rem 1rem 1.25rem; }
+  }
+</style>

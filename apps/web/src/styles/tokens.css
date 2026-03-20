@@ -77,8 +77,8 @@
   --ease-out:     cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Fix table width inside prose */
+/* Fix table width inside prose — keep display:block for mobile overflow-x scroll */
 .article-body table {
   width: 100% !important;
-  display: table !important;
+  max-width: 100% !important;
 }

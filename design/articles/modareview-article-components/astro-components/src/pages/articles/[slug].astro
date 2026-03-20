@@ -1,0 +1,85 @@
+---
+// apps/web/src/pages/articles/[slug].astro
+// Страница статьи — получает данные из Payload CMS API
+
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import ArticleBody from '../../components/article/ArticleBody.astro';
+
+// ── Типы ─────────────────────────────────────────────────────
+interface Article {
+  id: string;
+  slug: string;
+  title: string;
+  content: string;          // HTML из Lexical (рендерится через htmlSerializer)
+  feedImageUrl?: string;
+  category: { name: string; slug: string };
+  author: { name: string; slug: string; avatar?: string };
+  publishedDate: string;
+  meta?: { title?: string; description?: string };
+}
+
+// ── Static Paths (SSG) ───────────────────────────────────────
+export async function getStaticPaths() {
+  const CMS_URL = import.meta.env.CMS_URL ?? 'http://localhost:3000';
+
+  const res = await fetch(
+    `${CMS_URL}/api/articles?_status=published&limit=1000&depth=2`,
+  );
+  const { docs } = await res.json();
+
+  return (docs as Article[]).map(article => ({
+    params: { slug: article.slug },
+    props:  { article },
+  }));
+}
+
+// ── Props ────────────────────────────────────────────────────
+const { article } = Astro.props as { article: Article };
+
+// ── Reading time (≈ 200 wpm) ─────────────────────────────────
+function calcReadingTime(html: string): number {
+  const text = html.replace(/<[^>]+>/g, ' ');
+  const words = text.trim().split(/\s+/).length;
+  return Math.max(1, Math.round(words / 200));
+}
+const readingTime = calcReadingTime(article.content ?? '');
+
+// ── Related articles (из той же категории) ───────────────────
+const CMS_URL = import.meta.env.CMS_URL ?? 'http://localhost:3000';
+const relatedRes = await fetch(
+  `${CMS_URL}/api/articles?_status=published&where[category.slug][equals]=${article.category.slug}&where[slug][not_equals]=${article.slug}&limit=4&depth=1`,
+);
+const { docs: relatedDocs } = await relatedRes.json();
+
+const relatedArticles = (relatedDocs as Article[]).map(a => ({
+  title: a.title,
+  slug: a.slug,
+  category: a.category.name,
+  coverImage: a.feedImageUrl,
+}));
+
+// ── Meta ─────────────────────────────────────────────────────
+const metaTitle       = article.meta?.title       ?? article.title;
+const metaDescription = article.meta?.description ?? '';
+---
+
+<ArticleLayout
+  title={metaTitle}
+  description={metaDescription}
+  category={article.category}
+  author={article.author}
+  publishedDate={article.publishedDate}
+  readingTime={readingTime}
+  coverImage={article.feedImageUrl}
+  coverAlt={article.title}
+  slug={article.slug}
+  relatedArticles={relatedArticles}
+>
+  <!--
+    Контент из Payload CMS Lexical → HTML
+    ArticleBody оборачивает его и применяет все стили
+  -->
+  <ArticleBody>
+    <Fragment set:html={article.content} />
+  </ArticleBody>
+</ArticleLayout>

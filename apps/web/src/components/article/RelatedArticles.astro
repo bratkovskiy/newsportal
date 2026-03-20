@@ -1,0 +1,116 @@
+---
+// apps/web/src/components/article/RelatedArticles.astro
+
+export interface Props {
+  articles: Array<{
+    title: string;
+    slug: string;
+    category: string;
+    coverImage?: string;
+  }>;
+}
+
+const { articles } = Astro.props;
+---
+
+<aside class="related" aria-label="Related articles">
+  <h3 class="related-heading">You might also like</h3>
+  <div class="related-grid">
+    {articles.slice(0, 4).map(article => (
+      <a class="related-card" href={`/article/${article.slug}`}>
+        <div class="related-img">
+          {article.coverImage
+            ? <img src={article.coverImage} alt={article.title} width="400" height="267" loading="lazy" decoding="async" />
+            : <div class="related-img-placeholder" aria-hidden="true" />
+          }
+        </div>
+        <div class="related-info">
+          <span class="related-cat">{article.category}</span>
+          <span class="related-title">{article.title}</span>
+        </div>
+      </a>
+    ))}
+  </div>
+</aside>
+
+<style>
+  .related {
+    margin-top: 4rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .related-heading {
+    font-size: .68rem;
+    font-weight: 500;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--warm-gray);
+    margin-bottom: 1.5rem;
+  }
+
+  .related-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .related-card {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+  }
+
+  .related-img {
+    aspect-ratio: 3 / 2;
+    background: var(--stone);
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+  }
+  .related-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .4s var(--ease-out);
+  }
+  .related-card:hover .related-img img {
+    transform: scale(1.05);
+  }
+  .related-img-placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--stone);
+  }
+
+  .related-info {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+  }
+
+  .related-cat {
+    font-size: .65rem;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .related-title {
+    font-family: var(--font-display);
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.35;
+    transition: color .15s;
+  }
+  .related-card:hover .related-title {
+    color: var(--accent);
+  }
+
+  @media (max-width: 520px) {
+    .related-grid { grid-template-columns: 1fr; }
+  }
+</style>

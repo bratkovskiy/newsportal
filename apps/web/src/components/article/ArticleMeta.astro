@@ -1,0 +1,117 @@
+---
+// apps/web/src/components/article/ArticleMeta.astro
+
+export interface Props {
+  author: { name: string; avatar?: string; slug: string };
+  date: string;       // отформатированная: "March 18, 2026"
+  dateISO: string;    // для datetime атрибута
+  readingTime: number;
+}
+
+const { author, date, dateISO, readingTime } = Astro.props;
+---
+
+<div class="article-meta">
+  <a class="author-link" href={`/author/${author.slug}`} aria-label={`Author: ${author.name}`}>
+    <div class="author-avatar" aria-hidden="true">
+      {author.avatar
+        ? <img src={author.avatar} alt={author.name} width="36" height="36" loading="eager" />
+        : <span class="avatar-fallback">{author.name.charAt(0)}</span>
+      }
+    </div>
+    <div class="author-info">
+      <span class="author-name">{author.name}</span>
+      <time class="meta-date" datetime={dateISO}>{date}</time>
+    </div>
+  </a>
+
+  <span class="meta-sep" aria-hidden="true">·</span>
+
+  <span class="reading-time">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+    {readingTime} min read
+  </span>
+</div>
+
+<style>
+  .article-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: .875rem 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .author-link {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    text-decoration: none;
+    color: inherit;
+    flex-shrink: 0;
+  }
+  .author-link:hover .author-name { color: var(--accent); }
+
+  .author-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--stone);
+    flex-shrink: 0;
+  }
+  .author-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: .9rem;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .author-info {
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+    line-height: 1.3;
+  }
+
+  .author-name {
+    font-size: .82rem;
+    font-weight: 500;
+    color: var(--ink);
+    transition: color .15s;
+  }
+
+  .meta-date {
+    font-size: .75rem;
+    color: var(--text-light);
+  }
+
+  .meta-sep {
+    color: var(--line);
+    font-size: 1.2rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .reading-time {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .78rem;
+    color: var(--warm-gray);
+    flex-shrink: 0;
+  }
+</style>

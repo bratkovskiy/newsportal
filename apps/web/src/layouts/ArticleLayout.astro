@@ -1,0 +1,210 @@
+---
+// apps/web/src/layouts/ArticleLayout.astro
+// Основной layout для страниц статей (/article/[slug])
+
+import Nav from '../components/Nav.astro';
+import ArticleMeta from '../components/article/ArticleMeta.astro';
+import ArticleCover from '../components/article/ArticleCover.astro';
+import ArticleBody from '../components/article/ArticleBody.astro';
+import RelatedArticles from '../components/article/RelatedArticles.astro';
+import '../styles/global.css';
+
+export interface Props {
+  title: string;
+  description: string;
+  category: { name: string; slug: string };
+  author: { name: string; avatar?: string; slug: string };
+  publishedDate: string;
+  readingTime?: number;          // минуты, считается на стороне Astro
+  coverImage?: string;           // feedImageUrl из CMS
+  coverAlt?: string;
+  slug: string;
+  relatedArticles?: Array<{
+    title: string;
+    slug: string;
+    category: string;
+    coverImage?: string;
+  }>;
+}
+
+const {
+  title,
+  description,
+  category,
+  author,
+  publishedDate,
+  readingTime = 5,
+  coverImage,
+  coverAlt = title,
+  slug,
+  relatedArticles = [],
+} = Astro.props;
+
+// Canonical URL
+const canonicalUrl = `https://modareview.com/article/${slug}`;
+
+// Форматирование даты
+const dateFormatted = new Date(publishedDate).toLocaleDateString('en-US', {
+  year: 'numeric', month: 'long', day: 'numeric',
+});
+const dateISO = new Date(publishedDate).toISOString();
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} — Moda Review</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonicalUrl} />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="article" />
+  <meta property="og:title"       content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url"         content={canonicalUrl} />
+  {coverImage && <meta property="og:image" content={coverImage} />}
+  <meta property="article:published_time" content={dateISO} />
+
+  <!-- JSON-LD: Article -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": title,
+    "description": description,
+    "image": coverImage || "",
+    "author": {
+      "@type": "Person",
+      "name": author.name,
+      "url": `https://modareview.com/author/${author.slug}`,
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Moda Review",
+      "url": "https://modareview.com",
+    },
+    "datePublished": dateISO,
+    "mainEntityOfPage": canonicalUrl,
+  })} />
+</head>
+
+<body>
+  <Nav />
+
+  <main>
+    <article class="article-page" itemscope itemtype="https://schema.org/Article">
+
+      <!-- Контент статьи — ограниченная ширина -->
+      <div class="article-inner">
+
+        <!-- Хлебные крошки -->
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="/">Home</a>
+          <span aria-hidden="true">/</span>
+          <a href={`/categories/${category.slug}`}>{category.name}</a>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{title}</span>
+        </nav>
+
+        <!-- Заголовок -->
+        <header class="article-header">
+          <a class="article-cat" href={`/categories/${category.slug}`}>{category.name}</a>
+          <h1 itemprop="headline">{title}</h1>
+          <ArticleMeta
+            author={author}
+            date={dateFormatted}
+            dateISO={dateISO}
+            readingTime={readingTime}
+          />
+        </header>
+
+        <!-- Обложка -->
+        {coverImage && (
+          <ArticleCover src={coverImage} alt={coverAlt} />
+        )}
+
+        <!-- Тело статьи (Lexical HTML из CMS) -->
+        <ArticleBody>
+          <slot />
+        </ArticleBody>
+
+        <!-- Related Articles -->
+        {relatedArticles.length > 0 && (
+          <RelatedArticles articles={relatedArticles} />
+        )}
+
+      </div>
+    </article>
+  </main>
+</body>
+</html>
+
+<style>
+  .article-page {
+    padding-bottom: 6rem;
+  }
+
+  .article-inner {
+    max-width: var(--article-w);
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem 0;
+  }
+
+  /* Хлебные крошки */
+  .breadcrumb {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: .72rem;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--warm-gray);
+    margin-bottom: 1.5rem;
+  }
+  .breadcrumb a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: opacity .15s;
+  }
+  .breadcrumb a:hover { opacity: .75; }
+  .breadcrumb span[aria-hidden] { color: var(--line); }
+  .breadcrumb span[aria-current] {
+    color: var(--warm-gray);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+  }
+
+  /* Заголовок */
+  .article-header { margin-bottom: 0; }
+
+  .article-cat {
+    display: inline-block;
+    font-size: .68rem;
+    font-weight: 500;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: .25rem .75rem;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    margin-bottom: 1rem;
+    transition: background .15s;
+  }
+  .article-cat:hover { background: var(--stone); }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 4vw, 2.6rem);
+    font-weight: 700;
+    line-height: 1.22;
+    color: var(--ink);
+    margin-bottom: 1.25rem;
+    letter-spacing: -.01em;
+  }
+</style>
