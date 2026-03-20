@@ -1,5 +1,9 @@
 ---
-import ArticleLayout from '../../layouts/Article.astro';
+// apps/web/src/pages/article/[...slug].astro
+// Страница статьи с новым дизайном
+
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import ArticleBody from '../../components/article/ArticleBody.astro';
 import { getCmsEnv } from '../../utils/cmsEnv';
 
 const { cmsUrl: CMS_URL, publicCmsUrl: PUBLIC_CMS_URL, placeholderImageUrl: PLACEHOLDER_IMAGE_URL } = getCmsEnv();
@@ -15,13 +19,9 @@ type PayloadArticle = {
   categories?: any[];
   tags?: any[];
   feedImageUrl?: string;
-  // Поля с основным текстом статьи
   contentHtml?: string;
   body?: unknown;
   viewCount?: number;
-  homeMainBlock?: boolean;
-  homeTop?: boolean;
-  homeMustRead?: boolean;
 };
 
 function parseArticlePath(slugPath: string): { id: number | null; slug: string | null } {
@@ -53,7 +53,6 @@ async function fetchArticleByPath(slugPath: string): Promise<PayloadArticle | nu
   try {
     const { id, slug } = parseArticlePath(slugPath);
 
-    // 1) Пытаемся найти по ID (новый формат /article/slug-id.html)
     if (id !== null) {
       try {
         const urlById = new URL(`/api/articles/${id}`, CMS_URL);
@@ -62,7 +61,6 @@ async function fetchArticleByPath(slugPath: string): Promise<PayloadArticle | nu
         if (resById.ok) {
           const doc: any = await resById.json();
           if (!doc) return null;
-          // Убедимся, что статья опубликована
           if ((doc as any)._status && (doc as any)._status !== 'published') {
             return null;
           }
@@ -72,11 +70,10 @@ async function fetchArticleByPath(slugPath: string): Promise<PayloadArticle | nu
           return doc as PayloadArticle;
         }
       } catch {
-        // игнорируем и пробуем фолбек по slug
+        // fallback to slug search
       }
     }
 
-    // 2) Фолбек на старый формат: поиск по slug, как раньше
     const fallbackSlug = slug
       ?? slugPath.split('/').filter(Boolean).slice(-1)[0]
       ?? '';
@@ -104,11 +101,7 @@ const slugParam = Array.isArray(Astro.params.slug)
   ? Astro.params.slug.join('/')
   : Astro.params.slug ?? '';
 
-console.log('[article/[...slug]] slugParam:', slugParam);
-
 const payloadArticle = await fetchArticleByPath(slugParam);
-
-console.log('[article/[...slug]] payloadArticle:', payloadArticle);
 
 if (!payloadArticle) {
   Astro.response.status = 404;
@@ -126,9 +119,53 @@ const category = firstCategory && typeof firstCategory === 'object'
   ? { name: firstCategory.name ?? '', slug: firstCategory.slug ?? '' }
   : { name: '', slug: '' };
 
+// Author info
+const authorObj = payloadArticle?.author && typeof payloadArticle.author === 'object'
+  ? payloadArticle.author
+  : null;
+
+const author = {
+  name: authorObj?.name ?? 'Unknown',
+  slug: authorObj?.slug ?? 'unknown',
+  avatar: authorObj?.avatar && typeof authorObj.avatar === 'object' 
+    ? new URL(authorObj.avatar.url, CMS_URL).toString()
+    : undefined,
+};
+
+// Cover image
+let coverImageUrl = '';
+let coverImageAlt = payloadArticle?.title ?? '';
+
+if (payloadArticle?.feedImageUrl) {
+  coverImageUrl = payloadArticle.feedImageUrl;
+} else if (payloadArticle?.coverImage && typeof payloadArticle.coverImage === 'object') {
+  const ci: any = payloadArticle.coverImage;
+  if (ci.url) {
+    coverImageUrl = new URL(ci.url, CMS_URL).toString();
+  }
+  if (ci.alt) {
+    coverImageAlt = ci.alt;
+  }
+} else if (typeof payloadArticle?.coverImage === 'number') {
+  try {
+    const mediaRes = await fetch(new URL(`/api/media/${payloadArticle.coverImage}`, CMS_URL).toString());
+    if (mediaRes.ok) {
+      const mediaDoc: any = await mediaRes.json();
+      if (mediaDoc?.url) {
+        coverImageUrl = new URL(mediaDoc.url, CMS_URL).toString();
+      }
+      if (mediaDoc?.alt) {
+        coverImageAlt = mediaDoc.alt;
+      }
+    }
+  } catch (e) {
+    // fallback to placeholder
+  }
+}
+
+// Article HTML content
 function addLazyLoadingToImages(html: string): string {
   if (!html) return html;
-  // Добавляем loading="lazy" и decoding="async" для всех <img>, у которых ещё нет loading=
   return html
     .replace(
       /<img(?![^>]*\bloading=)([^>]*)>/gi,
@@ -154,7 +191,7 @@ function removeHeroImageFromHtml(html: string, coverUrl: string): string {
       candidates.push(u.pathname);
     }
   } catch {
-    // ignore URL parsing errors
+    // ignore
   }
 
   let result = html;
@@ -182,7 +219,7 @@ function extractHeroFigure(html: string, coverUrl: string): { html: string; capt
       candidates.push(u.pathname);
     }
   } catch {
-    // ignore URL parsing errors
+    // ignore
   }
 
   let working = html;
@@ -191,7 +228,7 @@ function extractHeroFigure(html: string, coverUrl: string): { html: string; capt
   for (const candidate of candidates) {
     const pattern = escapeForRegex(candidate);
     const figureRegex = new RegExp(
-      `<figure[^>]*>[\s\S]*?<img[^>]*src=["'][^"']*${pattern}[^"']*["'][^>]*>[\s\S]*?<\\/figure>`,
+      `<figure[^>]*>[\\s\\S]*?<img[^>]*src=["'][^"']*${pattern}[^"']*["'][^>]*>[\\s\\S]*?<\\/figure>`,
       'i',
     );
     const match = working.match(figureRegex);
@@ -207,604 +244,98 @@ function extractHeroFigure(html: string, coverUrl: string): { html: string; capt
     }
   }
 
-  // Фолбек: если caption всё ещё пустой, берём первый figcaption из всего HTML
-  if (!caption) {
-    const genericFigcaptionRegex = new RegExp('<figcaption[^>]*>([\\s\\S]*?)<\\/figcaption>', 'i');
-    const capMatch = working.match(genericFigcaptionRegex);
-    if (capMatch) {
-      caption = capMatch[1].trim();
-      working = working.replace(genericFigcaptionRegex, '');
-    }
-  }
-
   return { html: working, caption };
 }
 
-type SiteLanguage = 'ru' | 'en';
-
-type SiteSettings = {
-  currentLanguage?: SiteLanguage;
-  labels?: {
-    homeMainRu?: string;
-    homeMainEn?: string;
-    articleReadMoreRu?: string;
-    articleReadMoreEn?: string;
-    articleAlsoOnTopicRu?: string;
-    articleAlsoOnTopicEn?: string;
-  };
-};
-
-let siteSettings: SiteSettings | null = null;
-let siteLanguage: SiteLanguage = 'ru';
-let labelArticleReadMore = 'Читайте также';
-let labelArticleAlsoOnTopic = 'Ещё по теме';
-let labelSidebarMain = 'Главное';
-
-try {
-  const res = await fetch(`${CMS_URL}/api/globals/site-settings`);
-  if (res.ok) {
-    const data = await res.json();
-    siteSettings = data as SiteSettings;
-    siteLanguage = siteSettings.currentLanguage === 'en' ? 'en' : 'ru';
-
-    labelArticleReadMore = siteLanguage === 'en'
-      ? siteSettings.labels?.articleReadMoreEn || 'Read more'
-      : siteSettings.labels?.articleReadMoreRu || 'Читайте также';
-
-    labelArticleAlsoOnTopic = siteLanguage === 'en'
-      ? siteSettings.labels?.articleAlsoOnTopicEn || 'More on this topic'
-      : siteSettings.labels?.articleAlsoOnTopicRu || 'Ещё по теме';
-
-    labelSidebarMain = siteLanguage === 'en'
-      ? siteSettings.labels?.homeMainEn || 'Top stories'
-      : siteSettings.labels?.homeMainRu || 'Главное';
-  }
-} catch (e) {
-  // игнорируем ошибки и остаёмся на значениях по умолчанию
-}
-
-// Попробуем определить URL обложки:
-// 1) если есть feedImageUrl (из RSS), используем его;
-// 2) если coverImage уже объект с url, используем его;
-// 3) если coverImage это ID, запрашиваем /api/media/{id};
-// 4) иначе используем placeholder.
-let coverImageUrl = PLACEHOLDER_IMAGE_URL;
-let coverImageAlt = payloadArticle?.title ?? '';
-
-if (payloadArticle?.feedImageUrl) {
-  coverImageUrl = payloadArticle.feedImageUrl;
-} else if (payloadArticle?.coverImage && typeof payloadArticle.coverImage === 'object') {
-  const ci: any = payloadArticle.coverImage;
-  if (ci.url) {
-    coverImageUrl = new URL(ci.url, CMS_URL).toString();
-  }
-  if (ci.alt) {
-    coverImageAlt = ci.alt;
-  }
-} else if (typeof payloadArticle?.coverImage === 'number') {
-  try {
-    const mediaRes = await fetch(new URL(`/api/media/${payloadArticle.coverImage}`, CMS_URL).toString());
-    if (mediaRes.ok) {
-      const mediaDoc: any = await mediaRes.json();
-      if (mediaDoc?.url) {
-        coverImageUrl = new URL(mediaDoc.url, CMS_URL).toString();
-      }
-      if (mediaDoc?.alt) {
-        coverImageAlt = mediaDoc.alt;
-      }
-    }
-  } catch (e) {
-    // в случае ошибки остаёмся на placeholder
-  }
-}
-
-// HTML-тело статьи: в приоритете contentHtml, затем body (если вдруг он строка)
 const articleHtmlRaw: string = payloadArticle
   ? (payloadArticle as any).contentHtml
       ?? (typeof (payloadArticle as any).body === 'string'
         ? (payloadArticle as any).body
         : '')
   : '';
-const { html: articleWithoutHeroFigure, caption: heroCaption } = extractHeroFigure(articleHtmlRaw, coverImageUrl);
+
+const { html: articleWithoutHeroFigure } = extractHeroFigure(articleHtmlRaw, coverImageUrl);
 const articleHtmlClean = removeHeroImageFromHtml(articleWithoutHeroFigure, coverImageUrl);
 const articleHtml = addLazyLoadingToImages(articleHtmlClean);
 
-// Связанные статьи по тегам (используем первый тег статьи)
-type RelatedItem = {
-  href: string;
+// Reading time calculation
+function calcReadingTime(html: string): number {
+  const text = html.replace(/<[^>]+>/g, ' ');
+  const words = text.trim().split(/\s+/).length;
+  return Math.max(1, Math.round(words / 200));
+}
+const readingTime = calcReadingTime(articleHtml);
+
+// Related articles (from same category)
+let relatedArticles: Array<{
   title: string;
-  imageUrl: string;
-  imageAlt: string;
-  tagName: string;
-  authorName: string;
-};
-
-function buildRelatedArticlePath(doc: any): string {
-  const slug = doc.slug || '';
-  const id = doc.id != null ? String(doc.id) : '';
-  if (slug && id) return `/article/${slug}-${id}.html`;
-  if (slug) return `/article/${slug}`;
-  if (id) return `/article/${id}`;
-  return '/';
-}
-
-function getRelatedCover(doc: any): { url: string; alt: string } {
-  if (doc.feedImageUrl) {
-    return { url: doc.feedImageUrl, alt: doc.title || '' };
-  }
-  const cover = doc.coverImage && typeof doc.coverImage === 'object' ? doc.coverImage : null;
-  const url = (cover && cover.url) ? new URL(cover.url, CMS_URL).toString() : PLACEHOLDER_IMAGE_URL;
-  const alt = (cover && cover.alt) || doc.title || '';
-  return { url, alt };
-}
-
-function getRelatedAuthorName(doc: any): string {
-  const author = doc.author;
-  if (author && typeof author === 'object') {
-    return author.name || 'Unknown';
-  }
-  return 'Unknown';
-}
-
-function getPrimaryTagNameForRelated(doc: any): string {
-  const tagsArr = Array.isArray(doc.tags) ? doc.tags : [];
-  if (!tagsArr.length) return '';
-  const first = tagsArr[0];
-  if (first && typeof first === 'object') {
-    return first.name || '';
-  }
-  return '';
-}
-
-type HomeBlockArticle = {
-  id: string;
-  href: string;
-  title: string;
-  excerpt: string;
-  imageUrl: string;
-  imageAlt: string;
-  fallbackImageUrl: string;
+  slug: string;
   category: string;
-  authorName: string;
-  publishedDate?: string;
-  viewCount: number;
-  homeTop?: boolean;
-};
+  coverImage?: string;
+}> = [];
 
-async function fetchArticlesForBlocks(): Promise<PayloadArticle[]> {
+if (category.slug && payloadArticle?.id) {
   try {
-    const url = new URL('/api/articles', CMS_URL);
-    url.searchParams.set('where[status][equals]', 'published');
-    url.searchParams.set('depth', '1');
-    url.searchParams.set('sort', '-publishedDate');
-    url.searchParams.set('page', '1');
-    url.searchParams.set('limit', '100');
+    const relatedUrl = new URL('/api/articles', CMS_URL);
+    relatedUrl.searchParams.set('where[status][equals]', 'published');
+    relatedUrl.searchParams.set('where[categories.slug][equals]', category.slug);
+    relatedUrl.searchParams.set('limit', '5');
+    relatedUrl.searchParams.set('depth', '1');
+    relatedUrl.searchParams.set('sort', '-publishedDate');
 
-    const res = await fetch(url.toString());
-    if (!res.ok) return [];
+    const relatedRes = await fetch(relatedUrl.toString());
+    if (relatedRes.ok) {
+      const { docs } = await relatedRes.json();
+      relatedArticles = (docs as PayloadArticle[])
+        .filter(doc => String(doc.id) !== String(payloadArticle.id))
+        .slice(0, 4)
+        .map(doc => {
+          let coverImg = '';
+          if (doc.feedImageUrl) {
+            coverImg = doc.feedImageUrl;
+          } else if (doc.coverImage && typeof doc.coverImage === 'object' && (doc.coverImage as any).url) {
+            coverImg = new URL((doc.coverImage as any).url, CMS_URL).toString();
+          }
 
-    const data = await res.json();
-    const docs = Array.isArray(data?.docs) ? data.docs : [];
-    return docs as PayloadArticle[];
-  } catch {
-    return [];
-  }
-}
-
-function buildBlockArticlePath(article: PayloadArticle): string {
-  const slug = article.slug ?? '';
-  const id = article.id ? String(article.id) : '';
-  if (slug && id) return `/article/${slug}-${id}.html`;
-  if (slug) return `/article/${slug}`;
-  if (id) return `/article/${id}`;
-  return '/';
-}
-
-function getBlockCoverImage(article: PayloadArticle): { url: string; alt: string } {
-  if (article.feedImageUrl) {
-    return { url: article.feedImageUrl, alt: article.title ?? '' };
-  }
-  const coverImage = article.coverImage && typeof article.coverImage === 'object'
-    ? article.coverImage
-    : null;
-  const url = coverImage?.url
-    ? new URL(coverImage.url, CMS_URL).toString()
-    : PLACEHOLDER_IMAGE_URL;
-  const alt = coverImage?.alt ?? (article.title ?? '');
-  return { url, alt };
-}
-
-function getBlockCategoryName(article: PayloadArticle): string {
-  const categories = Array.isArray(article.categories) ? article.categories : [];
-  if (!categories.length) return '';
-  const first = categories[0];
-  if (first && typeof first === 'object') {
-    return first.name ?? '';
-  }
-  return '';
-}
-
-function getBlockAuthorName(article: PayloadArticle): string {
-  const author = article.author;
-  if (author && typeof author === 'object') {
-    return author.name ?? 'Unknown';
-  }
-  return 'Unknown';
-}
-
-function getPublishedTimestampForBlock(article: HomeBlockArticle): number {
-  if (!article.publishedDate) return 0;
-  const time = Date.parse(article.publishedDate);
-  return Number.isNaN(time) ? 0 : time;
-}
-
-function sortByDateThenViewsForBlock(list: HomeBlockArticle[]): HomeBlockArticle[] {
-  return [...list].sort((a, b) => {
-    const dateDiff = getPublishedTimestampForBlock(b) - getPublishedTimestampForBlock(a);
-    if (dateDiff !== 0) return dateDiff;
-    const av = typeof a.viewCount === 'number' ? a.viewCount : 0;
-    const bv = typeof b.viewCount === 'number' ? b.viewCount : 0;
-    return bv - av;
-  });
-}
-
-function sortByDateOnlyForBlock(list: HomeBlockArticle[]): HomeBlockArticle[] {
-  return [...list].sort(
-    (a, b) => getPublishedTimestampForBlock(b) - getPublishedTimestampForBlock(a),
-  );
-}
-
-function selectTopForArticlePage(
-  all: HomeBlockArticle[],
-  usedIds: Set<string>,
-  limit: number,
-): HomeBlockArticle[] {
-  const result: HomeBlockArticle[] = [];
-  if (!all.length || limit <= 0) return result;
-
-  const flagged = sortByDateThenViewsForBlock(all.filter((a) => a.homeTop));
-  const availableFlagged = flagged.filter((a) => !usedIds.has(a.id));
-
-  for (const article of availableFlagged) {
-    if (result.length >= limit) break;
-    result.push(article);
-    usedIds.add(article.id);
-  }
-
-  if (result.length < limit && flagged.length > 0) {
-    for (const article of flagged) {
-      if (result.some((r) => r.id === article.id)) continue;
-      result.push(article);
-      usedIds.add(article.id);
-      if (result.length >= limit) break;
-    }
-  }
-
-  if (result.length < limit) {
-    const sorted = sortByDateThenViewsForBlock(all);
-    for (const article of sorted) {
-      if (result.length >= limit) break;
-      if (usedIds.has(article.id) || result.some((r) => r.id === article.id)) continue;
-      result.push(article);
-      usedIds.add(article.id);
-    }
-  }
-
-  return result;
-}
-
-function selectReadMoreForArticlePage(
-  all: HomeBlockArticle[],
-  usedIds: Set<string>,
-  limit: number,
-): HomeBlockArticle[] {
-  const result: HomeBlockArticle[] = [];
-  if (!all.length || limit <= 0) return result;
-
-  const sorted = sortByDateOnlyForBlock(all);
-  for (const article of sorted) {
-    if (result.length >= limit) break;
-    if (usedIds.has(article.id)) continue;
-    result.push(article);
-    usedIds.add(article.id);
-  }
-
-  return result;
-}
-
-// Получаем теги статьи
-const rawTags = Array.isArray(payloadArticle?.tags)
-  ? payloadArticle.tags
-      .filter((tag: any) => tag && typeof tag === 'object' && tag.name && tag.slug)
-      .map((tag: any) => ({
-        name: tag.name,
-        slug: tag.slug,
-      }))
-  : [];
-
-// Для цепочки навигации используем не более трёх тегов, отсортированных по алфавиту
-const tags = rawTags
-  .slice()
-  .sort((a, b) => {
-    const aName = String(a.name || '').toLocaleLowerCase('ru-RU');
-    const bName = String(b.name || '').toLocaleLowerCase('ru-RU');
-    if (aName < bName) return -1;
-    if (aName > bName) return 1;
-    return 0;
-  })
-  .slice(0, 3);
-
-let relatedArticles: RelatedItem[] = [];
-
-// Определяем slug первого тега статьи
-let primaryTagSlug = tags.length > 0 ? tags[0].slug : '';
-
-if (primaryTagSlug) {
-  try {
-    // Находим тег по slug, чтобы получить его ID (как на странице тега)
-    const tagRes = await fetch(`${CMS_URL}/api/tags?where[slug][equals]=${primaryTagSlug}&limit=1`);
-    if (tagRes.ok) {
-      const tagData = await tagRes.json();
-      const tagDocs: any[] = Array.isArray(tagData?.docs) ? tagData.docs : [];
-      const tagDoc = tagDocs[0];
-      const primaryTagId = tagDoc?.id;
-
-      if (primaryTagId != null) {
-        const relatedUrl = `${CMS_URL}/api/articles?where[tags][equals]=${primaryTagId}&where[status][equals]=published&limit=8&sort=-publishedDate&depth=1`;
-        const relatedRes = await fetch(relatedUrl);
-        if (relatedRes.ok) {
-          const relatedData = await relatedRes.json();
-          const docs: any[] = Array.isArray(relatedData?.docs) ? relatedData.docs : [];
-          relatedArticles = docs
-            .filter((doc) => String(doc.id) !== String(payloadArticle?.id))
-            .slice(0, 6)
-            .map((doc) => {
-              const { url, alt } = getRelatedCover(doc);
-              const authorName = getRelatedAuthorName(doc);
-              const tagName = getPrimaryTagNameForRelated(doc);
-              return {
-                href: buildRelatedArticlePath(doc),
-                title: doc.title || '',
-                imageUrl: url,
-                imageAlt: alt,
-                tagName,
-                authorName,
-              };
-            });
-        }
-      }
+          return {
+            title: doc.title ?? '',
+            slug: doc.slug ?? '',
+            category: category.name,
+            coverImage: coverImg,
+          };
+        });
     }
   } catch (e) {
-    console.error('Error fetching related articles', e);
+    console.error('Error fetching related articles:', e);
   }
 }
 
-let articleTopArticles: HomeBlockArticle[] = [];
-let articleReadMoreArticles: HomeBlockArticle[] = [];
-
-if (payloadArticle?.id != null) {
-  try {
-    const currentId = String(payloadArticle.id);
-    const docsForBlocks = await fetchArticlesForBlocks();
-    const filteredDocs = docsForBlocks.filter((doc) => String(doc.id) !== currentId);
-
-    const mapped: HomeBlockArticle[] = filteredDocs.map((doc: any) => {
-      const { url, alt } = getBlockCoverImage(doc);
-      const categoryName = getBlockCategoryName(doc);
-      const authorName = getBlockAuthorName(doc);
-      const viewCount = typeof doc.viewCount === 'number' ? doc.viewCount : 0;
-      const tagName = getPrimaryTagNameForRelated(doc);
-
-      return {
-        id: String(doc.id),
-        href: buildBlockArticlePath(doc),
-        title: doc.title || '',
-        excerpt: doc.excerpt || '',
-        imageUrl: url,
-        imageAlt: alt,
-        fallbackImageUrl: PLACEHOLDER_IMAGE_URL,
-        category: tagName || categoryName || 'Статьи',
-        authorName,
-        publishedDate: doc.publishedDate,
-        viewCount,
-        homeTop: doc.homeTop ?? false,
-      };
-    });
-
-    const usedIdsForPage = new Set<string>();
-    usedIdsForPage.add(currentId);
-
-    articleTopArticles = selectTopForArticlePage(mapped, usedIdsForPage, 4);
-    articleReadMoreArticles = selectReadMoreForArticlePage(mapped, usedIdsForPage, 6);
-  } catch (e) {
-    console.error('Error building article page blocks', e);
-  }
-}
-
-const articleDetails = payloadArticle
-  ? {
-      slug: slugParam,
-      title: payloadArticle.title ?? '',
-      excerpt: payloadArticle.excerpt ?? '',
-      author: payloadArticle.author && typeof payloadArticle.author === 'object'
-        ? payloadArticle.author.name ?? 'Unknown'
-        : 'Unknown',
-      publishedDate,
-      coverImage: coverImageUrl,
-      coverImageAlt,
-      category,
-      tags,
-      coverCaption: heroCaption,
-      fallbackImageUrl: PLACEHOLDER_IMAGE_URL,
-      locale: siteLanguage,
-    }
-  : null;
+const metaTitle = payloadArticle?.title ?? '';
+const metaDescription = payloadArticle?.excerpt ?? '';
 ---
 
-{articleDetails ? (
-  <ArticleLayout {...articleDetails}>
-    <script type="application/ld+json" set:html={JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "Article",
-        "headline": articleDetails.title,
-        "image": articleDetails.coverImage,
-        "datePublished": articleDetails.publishedDate.toISOString(),
-        "author": {
-            "@type": "Person",
-            "name": articleDetails.author
-        }
-    })} />
+{payloadArticle ? (
+  <ArticleLayout
+    title={metaTitle}
+    description={metaDescription}
+    category={category}
+    author={author}
+    publishedDate={publishedDate.toISOString()}
+    readingTime={readingTime}
+    coverImage={coverImageUrl}
+    coverAlt={coverImageAlt}
+    slug={slugParam}
+    relatedArticles={relatedArticles}
+  >
+    <ArticleBody>
+      <Fragment set:html={articleHtml} />
+    </ArticleBody>
 
-    <nav slot="breadcrumbs" class="text-xs md:text-sm mb-4 text-muted">
-        <a href="/" class="hover:text-accent">Главная</a>
-        <span class="mx-2">/</span>
-
-        {articleDetails.category && articleDetails.category.slug && articleDetails.category.name && (
-          <>
-            <a
-              href="/categories"
-              class="hover:text-accent"
-            >
-              Категории
-            </a>
-            <span class="mx-2">/</span>
-            <a
-              href={`/categories/${articleDetails.category.slug}`}
-              class="hover:text-accent"
-            >
-              {articleDetails.category.name}
-            </a>
-            <span class="mx-2">/</span>
-          </>
-        )}
-
-        {articleDetails.tags && articleDetails.tags.length > 0 && (
-          <>
-            {articleDetails.tags.map((tag: any, index: number) => (
-              <>
-                <a
-                  href={`/tags/${tag.slug}`}
-                  class="hover:text-accent"
-                >
-                  {tag.name}
-                </a>
-                <span class="mx-2">/</span>
-              </>
-            ))}
-          </>
-        )}
-
-        <span>{articleDetails.title}</span>
-    </nav>
-
-    {articleHtml
-      ? (
-        <div class="mt-6" set:html={articleHtml} />
-      ) : (
-        <p class="mt-6 text-lg leading-relaxed">{articleDetails.excerpt}</p>
-      )}
-
-    <div slot="related">
-      {articleReadMoreArticles.length > 0 && (
-        <section class="mt-10 pt-8 border-t border-border">
-          <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-4">{labelArticleReadMore}</h2>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {articleReadMoreArticles.map((article) => (
-              <a href={article.href} class="flex gap-4 group">
-                <div class="flex-shrink-0 w-32 md:w-40 overflow-hidden rounded-image">
-                  <img
-                    src={article.imageUrl}
-                    alt={article.imageAlt}
-                    width={200}
-                    height={130}
-                    loading="lazy"
-                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    onerror={`this.onerror=null; this.src='${article.fallbackImageUrl}';`}
-                  />
-                </div>
-                <div class="flex-1 border-b border-border pb-4">
-                  {article.category && (
-                    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
-                      {article.category}
-                    </p>
-                  )}
-                  <h3 class="text-sm md:text-base font-semibold text-foreground leading-snug line-clamp-2 group-hover:underline">
-                    {article.title}
-                  </h3>
-                  <p class="text-xs text-muted mt-2">{article.authorName}</p>
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {relatedArticles.length > 0 && (
-        <section class="mt-10 pt-8 border-t border-border">
-          <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-4">{labelArticleAlsoOnTopic}</h2>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {relatedArticles.map((item) => (
-              <a href={item.href} class="flex gap-4 group">
-                <div class="flex-shrink-0 w-32 md:w-40 overflow-hidden rounded-image">
-                  <img
-                    src={item.imageUrl}
-                    alt={item.imageAlt}
-                    width={200}
-                    height={130}
-                    loading="lazy"
-                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    onerror={`this.onerror=null; this.src='${PLACEHOLDER_IMAGE_URL}';`}
-                  />
-                </div>
-                <div class="flex-1 border-b border-border pb-4">
-                  {item.tagName && (
-                    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
-                      {item.tagName}
-                    </p>
-                  )}
-                  <h3 class="text-sm md:text-base font-semibold text-foreground leading-snug line-clamp-2 group-hover:underline">
-                    {item.title}
-                  </h3>
-                  <p class="text-xs text-muted mt-2">{item.authorName}</p>
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-    </div>
-
-    <div slot="right">
-      {articleTopArticles.length > 0 && (
-        <section>
-          <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-3">{labelSidebarMain}</h2>
-          <div class="space-y-4">
-            {articleTopArticles.map((article) => (
-              <a
-                href={article.href}
-                class="block border-b border-border pb-4 last:border-b-0 last:pb-0"
-              >
-                {article.category && (
-                  <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
-                    {article.category}
-                  </p>
-                )}
-                <h3 class="text-sm font-semibold text-foreground leading-snug line-clamp-2">
-                  {article.title}
-                </h3>
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-    </div>
-
-    {/* Счетчик просмотров */}
+    {/* View counter */}
     <script define:vars={{ articleId: payloadArticle?.id, publicCmsUrl: PUBLIC_CMS_URL }}>
       (function() {
         if (!articleId || !publicCmsUrl) return;
         
-        // Инкрементируем счетчик просмотров
         fetch(publicCmsUrl + '/api/articles/' + articleId + '/increment-view', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
@@ -813,8 +344,7 @@ const articleDetails = payloadArticle
         });
       })();
     </script>
-
   </ArticleLayout>
 ) : (
-  <p class="container mx-auto px-4 py-8">Article not found.</p>
+  <p style="padding: 2rem; text-align: center;">Article not found.</p>
 )}
