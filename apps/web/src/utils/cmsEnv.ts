@@ -1,9 +1,14 @@
-/// <reference types="astro/client" />
-
 const DEV_PUBLIC_CMS_FALLBACK = 'http://localhost:3000';
 const DEV_PLACEHOLDER_FALLBACK = `${DEV_PUBLIC_CMS_FALLBACK}/api/media/file/placeholder-1.jpg`;
 
-const env = import.meta.env;
+type CmsEnv = {
+  CMS_URL?: string;
+  PUBLIC_CMS_URL?: string;
+  PUBLIC_PLACEHOLDER_URL?: string;
+  MODE?: 'development' | 'production' | 'test';
+};
+
+const env = ((import.meta as { env?: CmsEnv }).env ?? {}) as CmsEnv;
 
 function stripTrailingSlash(url: string): string {
   return url.endsWith('/') ? url.slice(0, -1) : url;
