@@ -1,10 +1,8 @@
 ---
 import ArticleLayout from '../../layouts/Article.astro';
-// В SSR используем CMS_URL (для Docker - http://cms:3000)
-const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
-// Для браузера нужен публичный URL (http://localhost:3000)
-const PUBLIC_CMS_URL = import.meta.env.PUBLIC_CMS_URL || 'http://localhost:3000';
-const PLACEHOLDER_IMAGE_URL = import.meta.env.PUBLIC_PLACEHOLDER_URL || 'http://localhost:3000/api/media/file/placeholder-1.jpg';
+import { getCmsEnv } from '../../utils/cmsEnv';
+
+const { cmsUrl: CMS_URL, publicCmsUrl: PUBLIC_CMS_URL, placeholderImageUrl: PLACEHOLDER_IMAGE_URL } = getCmsEnv();
 
 type PayloadArticle = {
   id: string;

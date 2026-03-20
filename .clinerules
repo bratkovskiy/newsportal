@@ -1,0 +1,67 @@
+# Global Project Rules
+
+Follow the existing project architecture and code patterns.
+Always prefer minimal changes to the current codebase.
+
+Avoid large refactors, unnecessary abstractions, or renaming existing modules unless absolutely required.
+
+
+# Agent System
+
+Agents are stored in the directory:
+
+.cline/agents/
+
+
+# Agent Activation
+
+When the user explicitly specifies an agent using the format:
+
+agent: <agent_name>
+
+You must:
+
+1. Locate the file:
+.cline/agents/<agent_name>.md
+
+2. Read the file.
+
+3. Strictly follow all instructions defined in that agent file.
+
+
+# Default Agent
+
+If the user describes:
+
+- a new feature
+- architectural changes
+- complex modifications
+
+Automatically activate the **planner** agent.
+
+
+# Agent File Loading Rule
+
+When an agent is activated you must:
+
+1. Read the corresponding file from the repository.
+2. Follow its instructions strictly.
+3. Treat the agent file as higher priority than default behavior.
+
+
+# Role Separation
+
+Planner agent:
+Creates implementation plans only.
+Code generation is NOT allowed.
+
+Implementation agents:
+Write and modify code according to the plan.
+
+
+# Response Language
+
+If the user writes in Russian:
+Respond in Russian.
+
+Code comments must always be written in English.

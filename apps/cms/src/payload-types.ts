@@ -106,12 +106,18 @@ export interface Config {
     robots: Robot;
     'site-settings': SiteSetting;
     'legal-page': LegalPage;
+    'privacy-page': PrivacyPage;
+    'cookies-page': CookiesPage;
+    'contacts-page': ContactsPage;
   };
   globalsSelect: {
     'analytics-settings': AnalyticsSettingsSelect<false> | AnalyticsSettingsSelect<true>;
     robots: RobotsSelect<false> | RobotsSelect<true>;
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     'legal-page': LegalPageSelect<false> | LegalPageSelect<true>;
+    'privacy-page': PrivacyPageSelect<false> | PrivacyPageSelect<true>;
+    'cookies-page': CookiesPageSelect<false> | CookiesPageSelect<true>;
+    'contacts-page': ContactsPageSelect<false> | ContactsPageSelect<true>;
   };
   locale: null;
   user: User & {
@@ -311,6 +317,10 @@ export interface Article {
     canonicalURL?: string | null;
   };
   /**
+   * Если включено, статья не попадает в sitemap и может быть закрыта от индексации метатегами.
+   */
+  noindex?: boolean | null;
+  /**
    * Количество просмотров статьи
    */
   viewCount: number;
@@ -426,6 +436,10 @@ export interface AdSlot {
   adFormat?: string | null;
   width?: number | null;
   height?: number | null;
+  /**
+   * Подсказка для разработчиков: показывает пример кода компонента AdSlot, который рендерит этот слот.
+   */
+  usageHint?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -669,6 +683,7 @@ export interface ArticlesSelect<T extends boolean = true> {
         metaDescription?: T;
         canonicalURL?: T;
       };
+  noindex?: T;
   viewCount?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -730,6 +745,7 @@ export interface AdSlotsSelect<T extends boolean = true> {
   adFormat?: T;
   width?: T;
   height?: T;
+  usageHint?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -814,6 +830,10 @@ export interface AnalyticsSetting {
      */
     yandexVerification?: string | null;
   };
+  /**
+   * Содержимое будет вставлено как есть внутрь <head> на всех страницах. Используйте только доверенный код (пиксели, скрипты, мета-теги).
+   */
+  customHeadHtml?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -841,6 +861,18 @@ export interface Robot {
 export interface SiteSetting {
   id: number;
   currentLanguage: 'ru' | 'en';
+  /**
+   * Используется как текстовый логотип в шапке и футере.
+   */
+  siteName?: string | null;
+  /**
+   * Произвольный CSS, который будет добавлен в <head> внутри <style>. Можно использовать, чтобы переопределить стили .site-logo-header.
+   */
+  headerLogoCss?: string | null;
+  /**
+   * Необязательный текст под логотипом в шапке, например: NEWS ABOUT MODA.
+   */
+  headerTagline?: string | null;
   labels?: {
     homeMainRu?: string | null;
     homeMainEn?: string | null;
@@ -884,6 +916,63 @@ export interface LegalPage {
   createdAt?: string | null;
 }
 /**
+ * Контент страницы «Политика конфиденциальности» (RU/EN), отображаемой по адресу /privacy-policy/.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "privacy-page".
+ */
+export interface PrivacyPage {
+  id: number;
+  /**
+   * HTML для русской версии страницы /privacy-policy/.
+   */
+  contentRu?: string | null;
+  /**
+   * HTML для английской версии страницы /privacy-policy/.
+   */
+  contentEn?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Контент страницы «Политика использования файлов Cookie» (RU/EN), отображаемой по адресу /cookies-policy/.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookies-page".
+ */
+export interface CookiesPage {
+  id: number;
+  /**
+   * HTML для русской версии страницы /cookies-policy/.
+   */
+  contentRu?: string | null;
+  /**
+   * HTML для английской версии страницы /cookies-policy/.
+   */
+  contentEn?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Контент страницы «Контакты» (RU/EN), отображаемой по адресу /contacts/.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contacts-page".
+ */
+export interface ContactsPage {
+  id: number;
+  /**
+   * HTML для русской версии страницы /contacts/.
+   */
+  contentRu?: string | null;
+  /**
+   * HTML для английской версии страницы /contacts/.
+   */
+  contentEn?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "analytics-settings_select".
  */
@@ -906,6 +995,7 @@ export interface AnalyticsSettingsSelect<T extends boolean = true> {
         googleVerification?: T;
         yandexVerification?: T;
       };
+  customHeadHtml?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -926,6 +1016,9 @@ export interface RobotsSelect<T extends boolean = true> {
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
   currentLanguage?: T;
+  siteName?: T;
+  headerLogoCss?: T;
+  headerTagline?: T;
   labels?:
     | T
     | {
@@ -959,6 +1052,39 @@ export interface SiteSettingsSelect<T extends boolean = true> {
  * via the `definition` "legal-page_select".
  */
 export interface LegalPageSelect<T extends boolean = true> {
+  contentRu?: T;
+  contentEn?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "privacy-page_select".
+ */
+export interface PrivacyPageSelect<T extends boolean = true> {
+  contentRu?: T;
+  contentEn?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookies-page_select".
+ */
+export interface CookiesPageSelect<T extends boolean = true> {
+  contentRu?: T;
+  contentEn?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contacts-page_select".
+ */
+export interface ContactsPageSelect<T extends boolean = true> {
   contentRu?: T;
   contentEn?: T;
   updatedAt?: T;

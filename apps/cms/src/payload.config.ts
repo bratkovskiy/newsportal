@@ -1122,6 +1122,19 @@ const AnalyticsSettings: GlobalConfig = {
           admin: {
             description: 'Идентификатор вида G-XXXXXXX.',
           },
+          validate: (value: string | null | undefined) => {
+            if (!value) return true;
+            
+            if (value.startsWith('UA-')) {
+              return 'Universal Analytics устарел и не поддерживается. Используйте GA4 Measurement ID в формате G-XXXXXXXX';
+            }
+            
+            if (!/^G-[A-Z0-9]+$/.test(value)) {
+              return 'Measurement ID должен быть в формате G-XXXXXXXX';
+            }
+            
+            return true;
+          },
         },
       ],
     },

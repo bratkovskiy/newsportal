@@ -6,6 +6,9 @@ const cspDirectives = {
   "script-src": [
     "'self'",
     "'unsafe-inline'", // Often required for analytics/ads, review if possible
+    "https://www.googletagmanager.com",
+    "https://www.google-analytics.com",
+    "https://ssl.google-analytics.com",
     "https://*.googlesyndication.com",
     "https://*.doubleclick.net",
     "https://yandex.ru",
@@ -46,7 +49,10 @@ const cspDirectives = {
     "'self'",
     "http://localhost:3000",
     "http://cms:3000",
+    "https://www.google-analytics.com",
     "https://*.google-analytics.com",
+    "https://analytics.google.com",
+    "https://stats.g.doubleclick.net",
     "https://mc.yandex.ru",
     "https://yastatic.net",
     "https://*.yastatic.net",

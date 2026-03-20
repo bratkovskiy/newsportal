@@ -48,6 +48,15 @@ try {
   if (res.ok) {
     const data = await res.json();
     analyticsSettings = data as AnalyticsSettings;
+    
+    // Validate measurementId format for security (prevent XSS)
+    if (analyticsSettings?.googleAnalytics?.measurementId) {
+      const measurementId = analyticsSettings.googleAnalytics.measurementId;
+      if (!/^G-[A-Z0-9]+$/.test(measurementId)) {
+        console.error('Invalid GA4 Measurement ID format:', measurementId);
+        analyticsSettings.googleAnalytics.measurementId = undefined;
+      }
+    }
   }
 } catch (error) {
   console.error('Failed to fetch analytics settings:', error);
