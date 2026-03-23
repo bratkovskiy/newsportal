@@ -1,0 +1,23 @@
+/* empty css                                 */
+import { c as createComponent, r as renderComponent, a as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_CMM1Egp5.mjs';
+import 'kleur/colors';
+import { $ as $$BaseLayout } from '../chunks/BaseLayout_Daea0-QY.mjs';
+export { renderers } from '../renderers.mjs';
+
+const $$About = createComponent(($$result, $$props, $$slots) => {
+  return renderTemplate`${renderComponent($$result, "BaseLayout", $$BaseLayout, { "title": "About Us", "description": "Learn more about FashionSite." }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<div class="container mx-auto px-4 py-8"> <div class="max-w-2xl mx-auto"> <h1 class="text-3xl font-bold text-foreground mb-4">About FashionSite</h1> <p class="text-lg text-muted mb-6">Your daily source for the latest in fashion, style, and culture.</p> <div class="prose prose-lg"> <p>Welcome to FashionSite, your number one source for all things fashion. We're dedicated to giving you the very best of style advice, with a focus on dependability, customer service and uniqueness.</p> <p>Founded in 2025 by a team of fashion enthusiasts, FashionSite has come a long way from its beginnings. When we first started out, our passion for eco-friendly and stylish clothing drove us to do intense research, and gave us the impetus to turn hard work and inspiration into to a booming online magazine.</p> <p>We now serve readers all over the world, and are thrilled to be a part of the quirky, eco-friendly, fair trade wing of the fashion industry.</p> <p>We hope you enjoy our articles as much as мы enjoy offering them to you. If you have any questions or comments, please don't hesitate to contact us.</p> </div> </div> </div> ` })}`;
+}, "/home/ilia/newsportal_clean/apps/web/src/pages/about.astro", void 0);
+
+const $$file = "/home/ilia/newsportal_clean/apps/web/src/pages/about.astro";
+const $$url = "/about";
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: $$About,
+  file: $$file,
+  url: $$url
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };
