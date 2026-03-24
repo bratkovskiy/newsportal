@@ -28,49 +28,79 @@ const metaDescription = await generateArticleDescription(excerpt);
 
 <BaseLayout title={metaTitle} description={metaDescription}>
   <MainColumns>
-    <article class="max-w-4xl mx-auto py-8 lg:py-10">
-      <div class="mb-6">
+    <article class="article-page">
+
+      <!-- Breadcrumbs -->
+      <div class="article-page__breadcrumbs">
         <slot name="breadcrumbs" />
       </div>
-      <header class="mb-10">
-        <div class="mb-6">
-          <h1 class="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-foreground">
-            {title}
-          </h1>
-          {excerpt && (
-            <p class="text-base md:text-lg text-muted mt-4 max-w-2xl">
-              {excerpt}
-            </p>
+
+      <!-- Header -->
+      <header class="article-page__header">
+
+        {category?.name && (
+          <a href={category.slug ? `/categories/${category.slug}` : '#'} class="article-page__cat-tag">
+            {category.name}
+          </a>
+        )}
+
+        <h1 class="article-page__title">{title}</h1>
+
+        {excerpt && (
+          <p class="article-page__excerpt">{excerpt}</p>
+        )}
+
+        <div class="article-page__byline">
+          {author?.avatar ? (
+            <img
+              src={author.avatar}
+              alt={typeof author === 'object' ? author.name : author}
+              width={32}
+              height={32}
+              class="article-page__avatar"
+              onerror="this.style.display='none'"
+            />
+          ) : (
+            <div class="article-page__avatar-placeholder">
+              {(typeof author === 'object' ? author?.name : author)?.charAt(0)?.toUpperCase()}
+            </div>
           )}
+          <span class="article-page__author">{typeof author === 'object' ? author?.name : author}</span>
+          <span class="article-page__byline-sep" aria-hidden="true"></span>
+          <time
+            class="article-page__date"
+            datetime={publishedDate instanceof Date ? publishedDate.toISOString() : publishedDate}
+          >
+            {formattedDate}
+          </time>
         </div>
-        <div class="flex flex-wrap items-center gap-3 text-xs text-muted">
-          <span>{typeof author === "object" ? author?.name : author}</span>
-          <span class="w-px h-3 bg-border" aria-hidden="true"></span>
-          <time datetime={publishedDate instanceof Date ? publishedDate.toISOString() : publishedDate}>{formattedDate}</time>
-        </div>
-        <div class="mt-8 rounded-card overflow-hidden shadow-card">
-          <img
-            src={coverImage}
-            alt={coverImageAlt}
-            width={1200}
-            height={600}
-            fetchpriority="high"
-            class="w-full h-auto object-cover aspect-video"
-            onerror={`this.onerror=null; this.src='${fallbackImageUrl}';`}
-          />
-        </div>
-        {coverCaption && (
-          <p class="mt-3 text-xs text-muted max-w-2xl">
-            {coverCaption}
-          </p>
+
+        {coverImage && (
+          <figure class="article-page__cover-wrap">
+            <img
+              src={coverImage}
+              alt={coverImageAlt}
+              width={1200}
+              height={630}
+              fetchpriority="high"
+              class="article-page__cover"
+              onerror={`this.onerror=null;this.src='${fallbackImageUrl}'`}
+            />
+            {coverCaption && (
+              <figcaption class="article-page__cover-caption">{coverCaption}</figcaption>
+            )}
+          </figure>
         )}
       </header>
 
-      <div class="prose prose-lg article-prose max-w-4xl w-full">
-        <slot /> <!-- Article content goes here -->
+      <!-- Body -->
+      <div class="article-prose">
+        <slot />
       </div>
-      
-      <slot name="related" /> <!-- Related articles block -->
+
+      <!-- Related -->
+      <slot name="related" />
+
     </article>
 
     <div slot="right" class="space-y-6">
@@ -81,39 +111,155 @@ const metaDescription = await generateArticleDescription(excerpt);
 </BaseLayout>
 
 <style is:global>
-  /* ─── BREADCRUMB ─── */
+
+  /* ── Article page wrapper ── */
+  .article-page {
+    padding: 1.5rem 0 3rem;
+  }
+
+  .article-page__breadcrumbs {
+    margin-bottom: 1.5rem;
+  }
+
+  /* ── Category tag ── */
+  .article-page__cat-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-decoration: none;
+    margin-bottom: 14px;
+    transition: opacity 0.15s;
+  }
+  .article-page__cat-tag:hover { opacity: 0.75; }
+
+  /* ── Title ── */
+  .article-page__title {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--ink);
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+  }
+
+  /* ── Excerpt / deck ── */
+  .article-page__excerpt {
+    font-size: 1.1rem;
+    color: var(--text-light);
+    line-height: 1.65;
+    margin-bottom: 1.25rem;
+    max-width: 680px;
+    font-weight: 300;
+  }
+
+  /* ── Byline ── */
+  .article-page__byline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 1rem 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 1.75rem;
+  }
+
+  .article-page__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .article-page__avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .article-page__author {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .article-page__byline-sep {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--warm-gray);
+    flex-shrink: 0;
+  }
+
+  .article-page__date {
+    font-size: 12px;
+    color: var(--warm-gray);
+  }
+
+  /* ── Cover image ── */
+  .article-page__cover-wrap {
+    margin: 0 0 2rem;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .article-page__cover {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
+  }
+
+  .article-page__cover-caption {
+    font-size: 0.72rem;
+    color: var(--warm-gray);
+    font-style: italic;
+    margin-top: 0.5rem;
+    padding: 0 0.25rem;
+  }
+
+  /* ── BREADCRUMB ── */
   .breadcrumb {
     display: flex;
-    gap: .5rem;
+    gap: 0.5rem;
     align-items: center;
-    font-size: .72rem;
+    font-size: 0.72rem;
     font-weight: 500;
-    letter-spacing: .1em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--warm-gray, hsl(var(--muted-foreground)));
+    color: var(--warm-gray);
     flex-wrap: wrap;
   }
   .breadcrumb a {
-    color: var(--accent, hsl(var(--accent)));
+    color: var(--warm-gray);
     text-decoration: none;
-    transition: opacity .2s;
+    transition: color 0.15s;
   }
-  .breadcrumb a:hover {
-    opacity: .75;
-  }
-  .breadcrumb span[aria-hidden] {
-    color: var(--line, hsl(var(--border)));
-  }
+  .breadcrumb a:hover { color: var(--accent); }
+  .breadcrumb span[aria-hidden] { color: var(--line); }
   .breadcrumb .breadcrumb-current {
-    color: var(--text-light, hsl(var(--muted-foreground)));
+    color: var(--text-light);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 300px;
   }
 
+  /* ── Article prose ── */
   .article-prose {
-    color: hsl(var(--foreground));
+    color: var(--text);
   }
 
   .article-prose p {
@@ -127,20 +273,16 @@ const metaDescription = await generateArticleDescription(excerpt);
   .article-prose h2,
   .article-prose h3,
   .article-prose h4 {
+    font-family: var(--font-display);
     font-weight: 700;
     line-height: 1.3;
     margin-top: 2.5rem;
     margin-bottom: 1rem;
+    color: var(--ink);
   }
 
-  .article-prose h2 {
-    font-size: 1.8rem;
-  }
-
-  .article-prose h3 {
-    font-size: 1.4rem;
-  }
-
+  .article-prose h2 { font-size: 1.8rem; }
+  .article-prose h3 { font-size: 1.4rem; }
   .article-prose h4 {
     font-size: 1.2rem;
     text-transform: none;
@@ -153,17 +295,14 @@ const metaDescription = await generateArticleDescription(excerpt);
     margin: 1rem 0;
   }
 
-  .article-prose li + li {
-    margin-top: 0.25rem;
-  }
+  .article-prose li + li { margin-top: 0.25rem; }
 
   .article-prose img {
     display: block;
     max-width: 100%;
     height: auto;
     margin: 2rem auto;
-    border-radius: 0.75rem;
-    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.25);
+    border-radius: var(--radius-md);
   }
 
   .article-prose figure {
@@ -171,54 +310,45 @@ const metaDescription = await generateArticleDescription(excerpt);
     text-align: center;
   }
 
-  .article-prose figure img {
-    margin-bottom: 0.75rem;
-  }
+  .article-prose figure img { margin-bottom: 0.75rem; }
 
   .article-prose figcaption {
     font-size: 0.875rem;
-    color: hsl(var(--muted-foreground));
+    color: var(--warm-gray);
+    font-style: italic;
   }
 
   .article-prose blockquote {
     margin: 2rem 0;
-    padding-left: 1.25rem;
-    border-left: 3px solid hsl(var(--accent));
+    padding: 1.25rem 1.5rem 1.25rem 1.75rem;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-light);
     font-style: italic;
-    color: hsl(var(--muted-foreground));
+    color: var(--ink);
   }
 
-  .article-prose blockquote p {
-    margin: 0.25rem 0;
-  }
+  .article-prose blockquote p { margin: 0.25rem 0; }
 
   .article-prose code {
     padding: 0.15rem 0.35rem;
     border-radius: 0.25rem;
-    background-color: hsl(var(--muted));
+    background: var(--stone);
     font-size: 0.9em;
   }
 
   .article-prose pre {
     padding: 1rem 1.25rem;
-    border-radius: 0.75rem;
-    background-color: #020617;
+    border-radius: var(--radius-md);
+    background: #020617;
     color: #e5e7eb;
     overflow-x: auto;
     font-size: 0.9rem;
   }
 
   @media (max-width: 768px) {
-    .article-prose {
-      font-size: 0.98rem;
-    }
-
-    .article-prose h2 {
-      font-size: 1.5rem;
-    }
-
-    .article-prose h3 {
-      font-size: 1.25rem;
-    }
+    .article-prose { font-size: 0.98rem; }
+    .article-prose h2 { font-size: 1.5rem; }
+    .article-prose h3 { font-size: 1.25rem; }
+    .article-page__title { font-size: 1.75rem; }
   }
 </style>
