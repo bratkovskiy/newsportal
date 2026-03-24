@@ -45,6 +45,15 @@ type PayloadArticle = {
   viewCount?: number;
 };
 
+function buildArticlePath(article: PayloadArticle): string {
+  const slug = article.slug ?? '';
+  const id = article.id ? String(article.id) : '';
+  if (slug && id) return `/article/${slug}-${id}.html`;
+  if (slug) return `/article/${slug}`;
+  if (id) return `/article/${id}`;
+  return '/';
+}
+
 function parseArticlePath(slugPath: string): { id: number | null; slug: string | null } {
   const segments = slugPath.split('/').filter(Boolean);
   if (!segments.length) return { id: null, slug: null };
@@ -292,6 +301,7 @@ const readingTime = calcReadingTime(articleHtml);
 let relatedArticles: Array<{
   title: string;
   slug: string;
+  href: string;
   category: string;
   coverImage?: string;
 }> = [];
@@ -322,6 +332,7 @@ if (category.slug && payloadArticle?.id) {
           return {
             title: doc.title ?? '',
             slug: doc.slug ?? '',
+            href: buildArticlePath(doc),
             category: category.name,
             coverImage: coverImg,
           };
@@ -376,6 +387,37 @@ const metaDescription = payloadArticle?.excerpt ?? '';
         });
       })();
     </script>
+
+    {relatedArticles.length > 0 && (
+      <div slot="related" class="art-related">
+        <div class="art-related__header">
+          <span class="art-related__label">Related articles</span>
+          <span class="art-related__line"></span>
+        </div>
+        <div class="art-related__grid">
+          {relatedArticles.map((rel) => (
+            <a href={rel.href} class="art-related__item">
+              {rel.coverImage && (
+                <div class="art-related__img-wrap">
+                  <img
+                    src={rel.coverImage}
+                    alt={rel.title}
+                    width={280}
+                    height={160}
+                    loading="lazy"
+                    class="art-related__img"
+                  />
+                </div>
+              )}
+              <div class="art-related__body">
+                {rel.category && <span class="art-related__cat">{rel.category}</span>}
+                <h3 class="art-related__title">{rel.title}</h3>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
   </ArticleLayout>
 ) : (
   <p style="padding: 2rem; text-align: center;">{notFoundText}</p>
