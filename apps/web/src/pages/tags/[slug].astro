@@ -11,7 +11,6 @@ const { slug } = Astro.params;
 const url = Astro.url;
 const currentPage = Number(url.searchParams.get('page') || '1');
 
-// Динамически загружаем тег по slug из CMS
 let tag = null;
 let tagId = null;
 
@@ -29,18 +28,45 @@ try {
   console.error('Error fetching tag:', error);
 }
 
-// Если тег не найден, возвращаем 404
 if (!tag || !tagId) {
   return Astro.redirect('/404');
 }
 
-// Получаем статьи для этого тега
 let articles = [];
 let pagination: { page: number; totalPages: number; totalDocs: number } = {
   page: currentPage,
   totalPages: 1,
   totalDocs: 0,
 };
+
+type SiteLanguage = 'ru' | 'en';
+type SiteSettings = {
+  currentLanguage?: SiteLanguage;
+};
+
+let siteSettings: SiteSettings | null = null;
+try {
+  const res = await fetch(`${CMS_URL}/api/globals/site-settings`);
+  if (res.ok) {
+    siteSettings = (await res.json()) as SiteSettings;
+  }
+} catch (error) {
+  console.error('Failed to fetch site settings:', error);
+}
+
+const currentLanguage: SiteLanguage = siteSettings?.currentLanguage === 'en' ? 'en' : 'ru';
+const defaultAuthorName = currentLanguage === 'en' ? 'Editorial team' : 'Редакция';
+const breadcrumbsHomeLabel = currentLanguage === 'en' ? 'Home' : 'Главная';
+const breadcrumbsTagsLabel = currentLanguage === 'en' ? 'Tags' : 'Теги';
+const paginationPrevLabel = currentLanguage === 'en' ? '← Previous' : '← Назад';
+const paginationNextLabel = currentLanguage === 'en' ? 'Next →' : 'Вперёд →';
+const paginationAriaLabel = currentLanguage === 'en' ? 'Pagination' : 'Пагинация';
+const emptyStateText = currentLanguage === 'en'
+  ? 'No published articles with this tag yet.'
+  : 'Статьи с этим тегом не найдены.';
+const paginationInfoText = (page: number, total: number) =>
+  currentLanguage === 'en' ? `Page ${page} of ${total}` : `Страница ${page} из ${total}`;
+
 try {
   const articlesResponse = await fetch(
     `${CMS_URL}/api/articles?where[tags][equals]=${tagId}&where[status][equals]=published&sort=-publishedDate&page=${currentPage}&limit=${PAGE_LIMIT}`
@@ -71,15 +97,13 @@ try {
         }
       }
       
-      // Получаем имя автора
-      let authorName = 'Редакция';
+      let authorName = defaultAuthorName;
       if (article.author) {
         if (typeof article.author === 'object' && article.author?.name) {
           authorName = article.author.name;
         }
       }
       
-      // Получаем имя первой категории
       let categoryName = '';
       if (article.categories && Array.isArray(article.categories) && article.categories.length > 0) {
         const firstCategory = article.categories[0];
@@ -88,7 +112,6 @@ try {
         }
       }
       
-      // Формируем путь статьи
       const articleSlug = article.slug || article.title?.toLowerCase().replace(/\s+/g, '-');
       const publishedDate = article.publishedDate ? new Date(article.publishedDate) : new Date();
       const year = publishedDate.getFullYear();
@@ -110,7 +133,6 @@ try {
   console.error('Error fetching articles:', error);
 }
 
-// Generate SEO meta tags
 const articleCount = articles.length;
 let metaTitle = tag.metaTitle as string | undefined;
 let metaDescription = tag.metaDescription as string | undefined;
@@ -128,9 +150,9 @@ if (!metaDescription) {
   <MainColumns>
     <!-- Breadcrumbs -->
     <nav class="text-sm mb-6">
-      <a href="/" class="text-muted hover:text-accent">Главная</a>
+      <a href="/" class="text-muted hover:text-accent">{breadcrumbsHomeLabel}</a>
       <span class="mx-2">/</span>
-      <a href="/tags" class="text-muted hover:text-accent">Теги</a>
+      <a href="/tags" class="text-muted hover:text-accent">{breadcrumbsTagsLabel}</a>
       <span class="mx-2">/</span>
       <span>{tag.name}</span>
     </nav>
@@ -173,31 +195,31 @@ if (!metaDescription) {
         </section>
 
         {pagination.totalPages > 1 && (
-          <nav class="mt-8 flex items-center justify-center gap-4 text-sm" aria-label="Пагинация">
+          <nav class="mt-8 flex items-center justify-center gap-4 text-sm" aria-label={paginationAriaLabel}>
             {pagination.page > 1 && (
               <a
                 href={pagination.page - 1 === 1 ? `/tags/${slug}` : `/tags/${slug}?page=${pagination.page - 1}`}
                 class="px-3 py-1 border border-border rounded-button hover:bg-accent hover:text-background transition-colors"
               >
-                Назад
+                {paginationPrevLabel}
               </a>
             )}
             <span class="text-muted">
-              Страница {pagination.page} из {pagination.totalPages}
+              {paginationInfoText(pagination.page, pagination.totalPages)}
             </span>
             {pagination.page < pagination.totalPages && (
               <a
                 href={`/tags/${slug}?page=${pagination.page + 1}`}
                 class="px-3 py-1 border border-border rounded-button hover:bg-accent hover:text-background transition-colors"
               >
-                Вперёд
+                {paginationNextLabel}
               </a>
             )}
           </nav>
         )}
       </>
     ) : (
-      <p class="text-muted">Статьи с этим тегом не найдены</p>
+      <p class="text-muted">{emptyStateText}</p>
     )}
   </MainColumns>
 </BaseLayout>

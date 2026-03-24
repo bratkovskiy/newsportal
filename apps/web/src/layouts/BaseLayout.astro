@@ -113,6 +113,10 @@ const footerTextSuffixEn = siteSettings?.footer?.textEn || `${siteNameText}. All
 const footerText = currentLanguage === 'en'
   ? `${currentYear} ${footerTextSuffixEn}`
   : `${currentYear} ${footerTextSuffixRu}`;
+
+const navHomeLabel = currentLanguage === 'en' ? 'Home' : 'Главная';
+const navTagsLabel = currentLanguage === 'en' ? 'Tags' : 'Теги';
+const navOpenMenuLabel = currentLanguage === 'en' ? 'Open menu' : 'Открыть меню';
 ---
 
 <!DOCTYPE html>
@@ -225,13 +229,13 @@ const footerText = currentLanguage === 'en'
           </a>
 
           <nav class="hidden md:flex items-center gap-6 text-xs font-medium uppercase tracking-[0.18em] text-muted flex-1 justify-center">
-            <a href="/" class="hover:text-accent transition-colors">Главная</a>
+            <a href="/" class="hover:text-accent transition-colors">{navHomeLabel}</a>
             {menuCategories.map(category => (
               <a href={`/categories/${category.slug}`} class="hover:text-accent transition-colors">
                 {category.name}
               </a>
             ))}
-            <a href="/tags" class="hover:text-accent transition-colors">Теги</a>
+            <a href="/tags" class="hover:text-accent transition-colors">{navTagsLabel}</a>
           </nav>
 
           <div class="ml-auto flex items-center gap-3">
@@ -242,7 +246,7 @@ const footerText = currentLanguage === 'en'
               aria-controls="mobile-menu"
               data-mobile-menu-toggle
             >
-              <span class="sr-only">Открыть меню</span>
+              <span class="sr-only">{navOpenMenuLabel}</span>
               <span class="mobile-burger-icon flex flex-col items-center justify-center gap-1 w-5 h-5">
                 <span class="mobile-burger-line block w-full h-0.5 bg-current rounded-full"></span>
                 <span class="mobile-burger-line block w-full h-0.5 bg-current rounded-full"></span>
@@ -257,13 +261,13 @@ const footerText = currentLanguage === 'en'
           class="md:hidden hidden fixed inset-x-0 top-16 bottom-0 z-40 border-t border-border bg-background text-xs font-medium uppercase tracking-[0.18em] text-muted"
         >
           <nav class="flex flex-col gap-4 items-center justify-start pt-6 text-center">
-            <a href="/" class="hover:text-accent transition-colors">Главная</a>
+            <a href="/" class="hover:text-accent transition-colors">{navHomeLabel}</a>
             {menuCategories.map(category => (
               <a href={`/categories/${category.slug}`} class="hover:text-accent transition-colors">
                 {category.name}
               </a>
             ))}
-            <a href="/tags" class="hover:text-accent transition-colors">Теги</a>
+            <a href="/tags" class="hover:text-accent transition-colors">{navTagsLabel}</a>
           </nav>
         </div>
       </div>

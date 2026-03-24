@@ -8,6 +8,27 @@ import { getCmsEnv } from '../../utils/cmsEnv';
 
 const { cmsUrl: CMS_URL, publicCmsUrl: PUBLIC_CMS_URL, placeholderImageUrl: PLACEHOLDER_IMAGE_URL } = getCmsEnv();
 
+type SiteLanguage = 'ru' | 'en';
+type SiteSettings = {
+  currentLanguage?: SiteLanguage;
+};
+
+let siteSettings: SiteSettings | null = null;
+try {
+  const res = await fetch(new URL('/api/globals/site-settings', CMS_URL).toString());
+  if (res.ok) {
+    siteSettings = (await res.json()) as SiteSettings;
+  }
+} catch (error) {
+  console.error('Failed to fetch site settings:', error);
+}
+
+const currentLanguage: SiteLanguage = siteSettings?.currentLanguage === 'en' ? 'en' : 'ru';
+const breadcrumbsHomeLabel = currentLanguage === 'en' ? 'Home' : 'Главная';
+const breadcrumbsCategoryLabel = currentLanguage === 'en' ? 'Categories' : 'Категории';
+const defaultAuthorName = currentLanguage === 'en' ? 'Unknown' : 'Неизвестно';
+const notFoundText = currentLanguage === 'en' ? 'Article not found.' : 'Статья не найдена.';
+
 type PayloadArticle = {
   id: string;
   title?: string;
@@ -126,7 +147,7 @@ const authorObj = payloadArticle?.author && typeof payloadArticle.author === 'ob
   : null;
 
 const author = {
-  name: authorObj?.name ?? 'Unknown',
+  name: authorObj?.name ?? defaultAuthorName,
   slug: authorObj?.slug ?? 'unknown',
   avatar: authorObj?.avatar && typeof authorObj.avatar === 'object' 
     ? new URL(authorObj.avatar.url, CMS_URL).toString()
@@ -327,10 +348,10 @@ const metaDescription = payloadArticle?.excerpt ?? '';
     fallbackImageUrl={PLACEHOLDER_IMAGE_URL}
   >
     <nav slot="breadcrumbs" class="breadcrumb" aria-label="Breadcrumb">
-      <a href="/">Главная</a>
+      <a href="/">{breadcrumbsHomeLabel}</a>
       <span aria-hidden="true">/</span>
       {category.slug ? (
-        <a href={`/category/${category.slug}`}>{category.name}</a>
+        <a href={`/categories/${category.slug}`}>{category.name}</a>
       ) : (
         <span>{category.name}</span>
       )}
@@ -357,5 +378,5 @@ const metaDescription = payloadArticle?.excerpt ?? '';
     </script>
   </ArticleLayout>
 ) : (
-  <p style="padding: 2rem; text-align: center;">Article not found.</p>
+  <p style="padding: 2rem; text-align: center;">{notFoundText}</p>
 )}

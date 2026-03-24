@@ -39,6 +39,56 @@ let pagination: { page: number; totalPages: number; totalDocs: number } = {
   totalDocs: 0,
 };
 
+type SiteLanguage = 'ru' | 'en';
+type SiteSettings = {
+  currentLanguage?: SiteLanguage;
+};
+
+let siteSettings: SiteSettings | null = null;
+try {
+  const res = await fetch(`${CMS_URL}/api/globals/site-settings`);
+  if (res.ok) {
+    siteSettings = (await res.json()) as SiteSettings;
+  }
+} catch (error) {
+  console.error('Failed to fetch site settings:', error);
+}
+
+const currentLanguage: SiteLanguage = siteSettings?.currentLanguage === 'en' ? 'en' : 'ru';
+const defaultAuthorName = currentLanguage === 'en' ? 'Editorial team' : 'Редакция';
+const breadcrumbsHomeLabel = currentLanguage === 'en' ? 'Home' : 'Главная';
+const breadcrumbsCategoriesLabel = currentLanguage === 'en' ? 'Categories' : 'Категории';
+const sectionAllArticlesLabel = currentLanguage === 'en' ? 'All articles' : 'Все статьи';
+const paginationPrevLabel = currentLanguage === 'en' ? '← Previous' : '← Назад';
+const paginationNextLabel = currentLanguage === 'en' ? 'Next →' : 'Вперёд →';
+const paginationAriaLabel = currentLanguage === 'en' ? 'Pagination' : 'Пагинация';
+const emptyStateText = currentLanguage === 'en'
+  ? 'No published articles in this category yet.'
+  : 'В этой категории пока нет опубликованных статей.';
+
+const paginationInfoText = (page: number, total: number) =>
+  currentLanguage === 'en' ? `Page ${page} of ${total}` : `Страница ${page} из ${total}`;
+
+const formatArticleCount = (count: number) => {
+  if (count <= 0) {
+    return '';
+  }
+  if (currentLanguage === 'en') {
+    return `${count} ${count === 1 ? 'article' : 'articles'}`;
+  }
+  const mod100 = count % 100;
+  const mod10 = count % 10;
+  let word = 'статей';
+  if (mod100 > 10 && mod100 < 20) {
+    word = 'статей';
+  } else if (mod10 === 1) {
+    word = 'статья';
+  } else if (mod10 >= 2 && mod10 <= 4) {
+    word = 'статьи';
+  }
+  return `${count} ${word}`;
+};
+
 try {
   const articlesResponse = await fetch(
     `${CMS_URL}/api/articles?where[categories][equals]=${categoryId}&where[status][equals]=published&sort=-publishedDate&page=${currentPage}&limit=${PAGE_LIMIT}`
@@ -65,7 +115,7 @@ try {
         }
       }
 
-      let authorName = 'Редакция';
+      let authorName = defaultAuthorName;
       if (article.author && typeof article.author === 'object' && article.author?.name) {
         authorName = article.author.name;
       }
@@ -108,9 +158,9 @@ const gridArticles = articles.slice(2);
 
     <!-- Breadcrumbs -->
     <nav class="cat-breadcrumb">
-      <a href="/">Главная</a>
+      <a href="/">{breadcrumbsHomeLabel}</a>
       <span>/</span>
-      <a href="/categories">Категории</a>
+      <a href="/categories">{breadcrumbsCategoriesLabel}</a>
       <span>/</span>
       <span class="cat-breadcrumb__current">{category.name}</span>
     </nav>
@@ -120,7 +170,7 @@ const gridArticles = articles.slice(2);
       <span class="cat-header__tag">{category.name}</span>
       <h1 class="cat-header__title">{category.name}</h1>
       {pagination.totalDocs > 0 && (
-        <p class="cat-header__count">{pagination.totalDocs} {pagination.totalDocs === 1 ? 'article' : 'articles'}</p>
+        <p class="cat-header__count">{formatArticleCount(pagination.totalDocs)}</p>
       )}
     </div>
 
@@ -159,7 +209,7 @@ const gridArticles = articles.slice(2);
         {gridArticles.length > 0 && (
           <section class="cat-grid-section">
             <div class="cat-section-label">
-              <span>All articles</span>
+              <span>{sectionAllArticlesLabel}</span>
               <span class="cat-section-label__line"></span>
             </div>
             <div class="cat-grid">
@@ -189,24 +239,24 @@ const gridArticles = articles.slice(2);
 
         <!-- Pagination -->
         {pagination.totalPages > 1 && (
-          <nav class="cat-pagination" aria-label="Pagination">
+          <nav class="cat-pagination" aria-label={paginationAriaLabel}>
             {pagination.page > 1 && (
               <a
                 href={pagination.page - 1 === 1 ? `/categories/${slug}` : `/categories/${slug}?page=${pagination.page - 1}`}
                 class="cat-pagination__btn"
               >
-                ← Previous
+                {paginationPrevLabel}
               </a>
             )}
             <span class="cat-pagination__info">
-              Page {pagination.page} of {pagination.totalPages}
+              {paginationInfoText(pagination.page, pagination.totalPages)}
             </span>
             {pagination.page < pagination.totalPages && (
               <a
                 href={`/categories/${slug}?page=${pagination.page + 1}`}
                 class="cat-pagination__btn"
               >
-                Next →
+                {paginationNextLabel}
               </a>
             )}
           </nav>
@@ -214,7 +264,7 @@ const gridArticles = articles.slice(2);
       </>
     ) : (
       <div class="cat-empty">
-        <p>No published articles in this category yet.</p>
+        <p>{emptyStateText}</p>
       </div>
     )}
 
