@@ -63,86 +63,46 @@ type HomeArticle = {
 async function fetchArticles(): Promise<PayloadArticle[]> {
   try {
     const url = `${CMS_URL}/api/articles?where[status][equals]=published&depth=1&sort=-publishedDate&page=1&limit=${PAGE_LIMIT}`;
-    
     const res = await fetch(url);
-    if (!res.ok) {
-      console.error('Failed to fetch articles:', res.status);
-      return [];
-    }
-
+    if (!res.ok) { console.error('Failed to fetch articles:', res.status); return []; }
     const data = (await res.json()) as ArticlesResponse;
     return Array.isArray(data?.docs) ? data.docs : [];
-  } catch (e) {
-    console.error('Error fetching articles:', e);
-    return [];
-  }
+  } catch (e) { console.error('Error fetching articles:', e); return []; }
 }
 
 async function fetchHomeCategories(): Promise<HomeCategory[]> {
   try {
     const url = `${CMS_URL}/api/categories?where[showOnHome][equals]=true&limit=20&sort=name`;
-
     const res = await fetch(url);
-    if (!res.ok) {
-      console.error('Failed to fetch home categories:', res.status);
-      return [];
-    }
-
+    if (!res.ok) { console.error('Failed to fetch home categories:', res.status); return []; }
     const data = await res.json();
     const docs = Array.isArray(data?.docs) ? data.docs : [];
-    return docs.map((cat: any) => ({
-      id: String(cat.id),
-      name: cat.name ?? '',
-      slug: cat.slug ?? '',
-    }));
-  } catch (e) {
-    console.error('Error fetching home categories:', e);
-    return [];
-  }
+    return docs.map((cat: any) => ({ id: String(cat.id), name: cat.name ?? '', slug: cat.slug ?? '' }));
+  } catch (e) { console.error('Error fetching home categories:', e); return []; }
 }
 
 async function fetchTags(): Promise<TagItem[]> {
   try {
     const url = `${CMS_URL}/api/tags?limit=50&sort=name`;
-
     const res = await fetch(url);
-    if (!res.ok) {
-      console.error('Failed to fetch tags:', res.status);
-      return [];
-    }
-
+    if (!res.ok) { console.error('Failed to fetch tags:', res.status); return []; }
     const data = await res.json();
     const docs = Array.isArray(data?.docs) ? data.docs : [];
-    return docs.map((tag: any) => ({
-      id: String(tag.id),
-      name: tag.name ?? '',
-      slug: tag.slug ?? '',
-    }));
-  } catch (e) {
-    console.error('Error fetching tags:', e);
-    return [];
-  }
+    return docs.map((tag: any) => ({ id: String(tag.id), name: tag.name ?? '', slug: tag.slug ?? '' }));
+  } catch (e) { console.error('Error fetching tags:', e); return []; }
 }
 
 function buildArticlePath(article: PayloadArticle): string {
   const slug = article.slug ?? '';
   const id = article.id ? String(article.id) : '';
-
-  // Новый формат: /article/slug-id.html
   if (slug && id) return `/article/${slug}-${id}.html`;
-
-  // Фолбек на случай отсутствия id или slug
   if (slug) return `/article/${slug}`;
   if (id) return `/article/${id}`;
   return '/';
 }
 
 function getCoverImage(article: PayloadArticle): { url: string; alt: string } {
-  // В приоритете внешнее изображение из RSS (custom:image), сохранённое в feedImageUrl.
-  if (article.feedImageUrl) {
-    return { url: article.feedImageUrl, alt: article.title ?? '' };
-  }
-
+  if (article.feedImageUrl) return { url: article.feedImageUrl, alt: article.title ?? '' };
   const coverImage = article.coverImage && typeof article.coverImage === 'object' ? article.coverImage : null;
   const url = coverImage?.url ?? PLACEHOLDER_IMAGE_URL;
   const alt = coverImage?.alt ?? (article.title ?? '');
@@ -152,25 +112,19 @@ function getCoverImage(article: PayloadArticle): { url: string; alt: string } {
 function getCategoryName(article: PayloadArticle): string {
   if (!Array.isArray(article.categories) || article.categories.length === 0) return '';
   const first = article.categories[0];
-  if (first && typeof first === 'object') {
-    return first.name ?? '';
-  }
+  if (first && typeof first === 'object') return first.name ?? '';
   return '';
 }
 
 function getAuthorName(article: PayloadArticle): string {
-  if (article.author && typeof article.author === 'object') {
-    return article.author.name ?? 'Unknown';
-  }
+  if (article.author && typeof article.author === 'object') return article.author.name ?? 'Unknown';
   return 'Unknown';
 }
 
 function getPrimaryTagName(article: PayloadArticle): string {
   if (!Array.isArray(article.tags) || article.tags.length === 0) return '';
   const first = article.tags[0];
-  if (first && typeof first === 'object') {
-    return first.name ?? '';
-  }
+  if (first && typeof first === 'object') return first.name ?? '';
   return '';
 }
 
@@ -203,18 +157,12 @@ function articleHasCategory(article: HomeArticle, categoryId: string): boolean {
   const list = Array.isArray(article.categories) ? article.categories : [];
   return list.some((cat: any) => {
     if (!cat) return false;
-    if (typeof cat === 'object') {
-      const id = (cat as any).id ?? cat;
-      return String(id) === categoryId;
-    }
+    if (typeof cat === 'object') { const id = (cat as any).id ?? cat; return String(id) === categoryId; }
     return String(cat) === categoryId;
   });
 }
 
-type CategoryBlock = {
-  category: HomeCategory;
-  articles: HomeArticle[];
-};
+type CategoryBlock = { category: HomeCategory; articles: HomeArticle[] };
 
 function selectHomeLayout(all: HomeArticle[], homeCategories: HomeCategory[]): {
   mainArticle?: HomeArticle;
@@ -225,175 +173,39 @@ function selectHomeLayout(all: HomeArticle[], homeCategories: HomeCategory[]): {
 } {
   const usedIds = new Set<string>();
 
-  function selectMain(): HomeArticle | undefined {
-    if (all.length === 0) return undefined;
-
-    const flagged = sortByDateThenViews(all.filter((a) => a.homeMainBlock));
-    const chosen = flagged.length > 0 ? flagged[0] : sortByDateThenViews(all)[0];
-    if (chosen) {
-      usedIds.add(chosen.id);
-    }
-    return chosen;
-  }
-
-  function selectTopMany(limit: number): HomeArticle[] {
+  function pick(sorted: HomeArticle[], limit: number): HomeArticle[] {
     const result: HomeArticle[] = [];
-    if (all.length === 0 || limit <= 0) return result;
-
-    const allFlagged = sortByDateThenViews(all.filter((a) => a.homeTop));
-    const availableFlagged = allFlagged.filter((a) => !usedIds.has(a.id));
-
-    for (const article of availableFlagged) {
+    for (const a of sorted) {
       if (result.length >= limit) break;
-      result.push(article);
-      usedIds.add(article.id);
+      if (!usedIds.has(a.id)) { result.push(a); usedIds.add(a.id); }
     }
-
-    if (result.length < limit && allFlagged.length > 0) {
-      for (const article of allFlagged) {
-        if (result.some((r) => r.id === article.id)) continue;
-        result.push(article);
-        usedIds.add(article.id);
-        if (result.length >= limit) break;
-      }
-    }
-
     if (result.length < limit) {
-      const sorted = sortByDateThenViews(all);
-      const candidates = sorted.filter(
-        (a) => !usedIds.has(a.id) && !result.some((r) => r.id === a.id),
-      );
-      for (const article of candidates) {
+      for (const a of sorted) {
         if (result.length >= limit) break;
-        result.push(article);
-        usedIds.add(article.id);
-      }
-
-      if (result.length < limit && sorted.length > 0) {
-        for (const article of sorted) {
-          if (result.some((r) => r.id === article.id)) continue;
-          result.push(article);
-          usedIds.add(article.id);
-          if (result.length >= limit) break;
-        }
+        if (!result.some(r => r.id === a.id)) { result.push(a); usedIds.add(a.id); }
       }
     }
-
     return result;
   }
 
-  function selectMustReadMany(limit: number): HomeArticle[] {
-    const result: HomeArticle[] = [];
-    if (all.length === 0 || limit <= 0) return result;
+  const byDate = sortByDateThenViews(all);
+  const byViews = sortByViewsThenDate(all);
 
-    const allFlagged = sortByDateThenViews(all.filter((a) => a.homeMustRead));
-    const availableFlagged = allFlagged.filter((a) => !usedIds.has(a.id));
+  const mainFlagged = sortByDateThenViews(all.filter(a => a.homeMainBlock));
+  const mainArticle = mainFlagged[0] ?? byDate[0];
+  if (mainArticle) usedIds.add(mainArticle.id);
 
-    for (const article of availableFlagged) {
-      if (result.length >= limit) break;
-      result.push(article);
-      usedIds.add(article.id);
-    }
+  const topArticles = pick(sortByDateThenViews(all.filter(a => a.homeTop)).concat(byDate), 4);
+  const mustReadArticles = pick(sortByDateThenViews(all.filter(a => a.homeMustRead)).concat(byDate), 2);
+  const popularArticles = pick(byViews, 4);
 
-    if (result.length < limit && allFlagged.length > 0) {
-      for (const article of allFlagged) {
-        if (result.some((r) => r.id === article.id)) continue;
-        result.push(article);
-        usedIds.add(article.id);
-        if (result.length >= limit) break;
-      }
-    }
-
-    if (result.length < limit) {
-      const sorted = sortByDateThenViews(all);
-      const candidates = sorted.filter(
-        (a) => !usedIds.has(a.id) && !result.some((r) => r.id === a.id),
-      );
-      for (const article of candidates) {
-        if (result.length >= limit) break;
-        result.push(article);
-        usedIds.add(article.id);
-      }
-
-      if (result.length < limit && sorted.length > 0) {
-        for (const article of sorted) {
-          if (result.some((r) => r.id === article.id)) continue;
-          result.push(article);
-          usedIds.add(article.id);
-          if (result.length >= limit) break;
-        }
-      }
-    }
-
-    return result;
+  const categoryBlocks: CategoryBlock[] = [];
+  for (const category of homeCategories) {
+    if (categoryBlocks.length >= 2) break;
+    const catArticles = sortByViewsThenDate(all.filter(a => articleHasCategory(a, category.id)));
+    const blockArticles = pick(catArticles, 4);
+    if (blockArticles.length > 0) categoryBlocks.push({ category, articles: blockArticles });
   }
-
-  function selectPopular(limit: number): HomeArticle[] {
-    const popular: HomeArticle[] = [];
-    if (all.length === 0 || limit <= 0) return popular;
-
-    const sortedAll = sortByViewsThenDate(all);
-
-    for (const article of sortedAll) {
-      if (usedIds.has(article.id)) continue;
-      popular.push(article);
-      usedIds.add(article.id);
-      if (popular.length >= limit) break;
-    }
-
-    if (popular.length < limit) {
-      for (const article of sortedAll) {
-        if (popular.some((p) => p.id === article.id)) continue;
-        popular.push(article);
-        usedIds.add(article.id);
-        if (popular.length >= limit) break;
-      }
-    }
-
-    return popular;
-  }
-
-  function selectCategoryBlocks(limit: number): CategoryBlock[] {
-    const blocks: CategoryBlock[] = [];
-    if (!homeCategories.length || !all.length || limit <= 0) return blocks;
-
-    for (const category of homeCategories) {
-      if (blocks.length >= 2) break;
-      const catArticles = all.filter((a) => articleHasCategory(a, category.id));
-      if (!catArticles.length) continue;
-
-      const sortedCat = sortByViewsThenDate(catArticles);
-      const blockArticles: HomeArticle[] = [];
-
-      for (const article of sortedCat) {
-        if (usedIds.has(article.id)) continue;
-        blockArticles.push(article);
-        usedIds.add(article.id);
-        if (blockArticles.length >= limit) break;
-      }
-
-      if (blockArticles.length < limit) {
-        for (const article of sortedCat) {
-          if (blockArticles.some((b) => b.id === article.id)) continue;
-          blockArticles.push(article);
-          usedIds.add(article.id);
-          if (blockArticles.length >= limit) break;
-        }
-      }
-
-      if (blockArticles.length > 0) {
-        blocks.push({ category, articles: blockArticles });
-      }
-    }
-
-    return blocks;
-  }
-
-  const mainArticle = selectMain();
-  const topArticles = selectTopMany(4);
-  const mustReadArticles = selectMustReadMany(2);
-  const popularArticles = selectPopular(4);
-  const categoryBlocks = selectCategoryBlocks(4);
 
   return { mainArticle, topArticles, mustReadArticles, popularArticles, categoryBlocks };
 }
@@ -427,90 +239,47 @@ const latestArticles: HomeArticle[] = articles.map((article) => {
   };
 });
 
-const { mainArticle, topArticles, mustReadArticles, popularArticles, categoryBlocks } = selectHomeLayout(
-  latestArticles,
-  homeCategories,
-);
+const { mainArticle, topArticles, mustReadArticles, popularArticles, categoryBlocks } =
+  selectHomeLayout(latestArticles, homeCategories);
 
-const featuredIds = new Set<string>();
+const featuredIds = new Set<string>([
+  ...(mainArticle ? [mainArticle.id] : []),
+  ...topArticles.map(a => a.id),
+  ...mustReadArticles.map(a => a.id),
+  ...popularArticles.map(a => a.id),
+  ...categoryBlocks.flatMap(b => b.articles.map(a => a.id)),
+]);
 
-if (mainArticle) {
-  featuredIds.add(mainArticle.id);
-}
-
-for (const a of topArticles) {
-  featuredIds.add(a.id);
-}
-
-for (const a of mustReadArticles) {
-  featuredIds.add(a.id);
-}
-
-for (const a of popularArticles) {
-  featuredIds.add(a.id);
-}
-
-for (const block of categoryBlocks) {
-  for (const a of block.articles) {
-    featuredIds.add(a.id);
-  }
-}
-
-const feedArticles = latestArticles.filter((article) => !featuredIds.has(article.id));
+const feedArticles = latestArticles.filter(a => !featuredIds.has(a.id));
 
 type SiteLanguage = 'ru' | 'en';
-
 type SiteSettings = {
   currentLanguage?: SiteLanguage;
   labels?: {
-    homeMainRu?: string;
-    homeMainEn?: string;
-    homeLatestRu?: string;
-    homeLatestEn?: string;
-    homeMustReadRu?: string;
-    homeMustReadEn?: string;
-    homePopularRu?: string;
-    homePopularEn?: string;
-    homeTagsRu?: string;
-    homeTagsEn?: string;
+    homeMainRu?: string; homeMainEn?: string;
+    homeLatestRu?: string; homeLatestEn?: string;
+    homeMustReadRu?: string; homeMustReadEn?: string;
+    homePopularRu?: string; homePopularEn?: string;
+    homeTagsRu?: string; homeTagsEn?: string;
   };
 };
 
 let siteSettings: SiteSettings | null = null;
-
 try {
   const res = await fetch(`${CMS_URL}/api/globals/site-settings`);
-  if (res.ok) {
-    const data = await res.json();
-    siteSettings = data as SiteSettings;
-  }
-} catch (e) {
-  // игнорируем ошибку, используем дефолтные подписи
-}
+  if (res.ok) siteSettings = await res.json() as SiteSettings;
+} catch (e) {}
 
 const currentLanguage: SiteLanguage = siteSettings?.currentLanguage === 'en' ? 'en' : 'ru';
+const L = (en: string | undefined, ru: string | undefined, defEn: string, defRu: string) =>
+  currentLanguage === 'en' ? (en || defEn) : (ru || defRu);
 
-const labelHomeMain = currentLanguage === 'en'
-  ? siteSettings?.labels?.homeMainEn || 'Top stories'
-  : siteSettings?.labels?.homeMainRu || 'Главное';
+const labelHomeMain    = L(siteSettings?.labels?.homeMainEn,    siteSettings?.labels?.homeMainRu,    'Top stories',        'Главное');
+const labelHomeLatest  = L(siteSettings?.labels?.homeLatestEn,  siteSettings?.labels?.homeLatestRu,  'Latest news',        'Последние новости');
+const labelHomeMustRead= L(siteSettings?.labels?.homeMustReadEn,siteSettings?.labels?.homeMustReadRu,'Must-Read Stories',  'Must-Read Stories');
+const labelHomePopular = L(siteSettings?.labels?.homePopularEn, siteSettings?.labels?.homePopularRu, 'Popular',            'Популярное');
+const labelHomeTags    = L(siteSettings?.labels?.homeTagsEn,    siteSettings?.labels?.homeTagsRu,    'Tags',               'Теги');
 
-const labelHomeLatest = currentLanguage === 'en'
-  ? siteSettings?.labels?.homeLatestEn || 'Latest news'
-  : siteSettings?.labels?.homeLatestRu || 'Последние новости';
-
-const labelHomeMustRead = currentLanguage === 'en'
-  ? siteSettings?.labels?.homeMustReadEn || 'Must-Read Stories'
-  : siteSettings?.labels?.homeMustReadRu || 'Must-Read Stories';
-
-const labelHomePopular = currentLanguage === 'en'
-  ? siteSettings?.labels?.homePopularEn || 'Popular'
-  : siteSettings?.labels?.homePopularRu || 'Популярное';
-
-const labelHomeTags = currentLanguage === 'en'
-  ? siteSettings?.labels?.homeTagsEn || 'Tags'
-  : siteSettings?.labels?.homeTagsRu || 'Теги';
-
-// Generate SEO meta tags
 const articleCount = articles.length;
 const brandName = await getBrandName();
 const metaTitle = await generateHomeTitle(articleCount, brandName);
@@ -520,376 +289,912 @@ const metaDescription = await generateHomeDescription(articleCount, brandName);
 <BaseLayout title={metaTitle} description={metaDescription}>
   <MainColumns>
     {articles.length === 0 ? (
-      <p>Нет статей из CMS (articles.length = {articles.length}).</p>
+      <p class="text-muted text-sm py-12 text-center">No articles yet.</p>
     ) : (
       <>
+
+        {/* ── HERO: main article + top stories sidebar ── */}
         {mainArticle && (
-          <section class="mb-12 grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)] items-start">
-            <div>
-              <CardA {...mainArticle} />
-            </div>
-
-            <div class="space-y-4">
-              <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-3">{labelHomeMain}</h2>
-              <div class="space-y-4">
-                {topArticles.map((article) => (
-                  <a
-                    href={article.href}
-                    class="block border-b border-border pb-4 last:border-b-0 last:pb-0"
-                  >
-                    {article.category && (
-                      <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
-                        {article.category}
-                      </p>
-                    )}
-                    <h3 class="text-sm font-semibold text-foreground leading-snug line-clamp-2">
-                      {article.title}
-                    </h3>
-                  </a>
-                ))}
+          <section class="home-hero">
+            {/* Main featured article */}
+            <a href={mainArticle.href} class="home-hero__main group">
+              <div class="home-hero__img-wrap">
+                <img
+                  src={mainArticle.imageUrl}
+                  alt={mainArticle.imageAlt}
+                  width={800}
+                  height={450}
+                  loading="eager"
+                  class="home-hero__img"
+                  onerror={`this.onerror=null;this.src='${PLACEHOLDER_IMAGE_URL}'`}
+                />
               </div>
-            </div>
-          </section>
-        )}
-
-        <section id="article-feed" class="mb-12">
-          <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-4">{labelHomeLatest}</h2>
-          <div
-            id="article-feed-grid"
-            class="grid grid-cols-1 lg:grid-cols-2 gap-6"
-          >
-            {feedArticles.map((article, index) => (
-              <>
-                {index === 8 && mustReadArticles.length > 0 && (
-                  <div class="lg:col-span-2 mb-8">
-                    <h3 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-4">{labelHomeMustRead}</h3>
-                    <div class="grid gap-6 md:grid-cols-2">
-                      {mustReadArticles.map((mr) => (
-                        <a
-                          href={mr.href}
-                          class="block group"
-                        >
-                          <div class="rounded-card overflow-hidden mb-4">
-                            <img
-                              src={mr.imageUrl}
-                              alt={mr.imageAlt}
-                              width={640}
-                              height={360}
-                              loading="lazy"
-                              class="w-full h-auto object-cover aspect-video transition-transform duration-300 group-hover:scale-105"
-                              onerror={`this.onerror=null; this.src='${PLACEHOLDER_IMAGE_URL}';`}
-                            />
-                          </div>
-                          {mr.category && (
-                            <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
-                              {mr.category}
-                            </p>
-                          )}
-                          <h4 class="text-lg md:text-xl font-bold text-foreground leading-snug mb-2 line-clamp-2">
-                            {mr.title}
-                          </h4>
-                          <p class="text-xs text-muted">
-                            {mr.authorName}
-                          </p>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
+              <div class="home-hero__body">
+                {mainArticle.category && (
+                  <span class="home-cat-tag">{mainArticle.category}</span>
                 )}
-
-                <div
-                  class:list={[index < 14 ? '' : 'hidden']}
-                  data-index={index}
-                >
-                  <a
-                    href={article.href}
-                    class="flex gap-4 group"
-                  >
-                    <div class="flex-shrink-0 w-32 md:w-40 overflow-hidden rounded-image">
-                      <img
-                        src={article.imageUrl}
-                        alt={article.imageAlt}
-                        width={200}
-                        height={130}
-                        loading="lazy"
-                        class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        onerror={`this.onerror=null; this.src='${article.fallbackImageUrl}';`}
-                      />
-                    </div>
-                    <div class="flex-1 border-b border-border pb-4">
-                      {article.category && (
-                        <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
-                          {article.category}
-                        </p>
-                      )}
-                      <h3 class="text-sm md:text-base font-semibold text-foreground leading-snug line-clamp-2 group-hover:underline">
-                        {article.title}
-                      </h3>
-                      <p class="text-xs text-muted mt-2">
-                        {article.authorName}
-                      </p>
-                    </div>
-                  </a>
-                </div>
-              </>
-            ))}
-          </div>
-          <div class="mt-10 flex justify-center">
-            <button
-              id="article-feed-more"
-              type="button"
-              class="px-6 py-2 border border-border rounded-button text-sm text-foreground hover:bg-accent hover:text-white transition-colors duration-150"
-            >
-              Показать ещё
-            </button>
-          </div>
-        </section>
-
-        <section class="mb-8">
-          <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-4">{labelHomePopular}</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {popularArticles.map((article) => (
-              <a
-                href={article.href}
-                class="block border-b border-border pb-3 last:border-b-0 last:pb-0"
-              >
-                {article.category && (
-                  <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
-                    {article.category}
-                  </p>
+                <h1 class="home-hero__title">{mainArticle.title}</h1>
+                {mainArticle.excerpt && (
+                  <p class="home-hero__excerpt">{mainArticle.excerpt}</p>
                 )}
-                <h3 class="text-sm font-semibold text-foreground leading-snug line-clamp-2">
-                  {article.title}
-                </h3>
-              </a>
-            ))}
-          </div>
-        </section>
-
-        {categoryBlocks.length > 0 && (
-          <section class="mb-8 grid gap-8 lg:grid-cols-2">
-            {categoryBlocks.map((block) => (
-              <div class="space-y-4">
-                <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-4">{block.category.name}</h2>
-                <div class="space-y-3">
-                  {block.articles.map((article) => (
-                    <a
-                      href={article.href}
-                      class="block border-b border-border pb-3 last:border-b-0 last:pb-0"
-                    >
-                      {article.category && (
-                        <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-accent mb-1">
-                          {article.category}
-                        </p>
-                      )}
-                      <h3 class="text-sm font-semibold text-foreground leading-snug line-clamp-2">
-                        {article.title}
-                      </h3>
-                    </a>
-                  ))}
-                </div>
+                <p class="home-hero__meta">{mainArticle.authorName}</p>
               </div>
-            ))}
-          </section>
-        )}
-
-        <section class="mb-12">
-          <h2 class="text-xs font-semibold tracking-[0.18em] uppercase text-muted mb-4">{labelHomeTags}</h2>
-          <div class="flex flex-wrap gap-2">
-            {displayTags.map((tag) => (
-              <a
-                href={`/tags/${tag.slug}`}
-                class="inline-flex px-3 py-1 bg-background border border-border rounded-full text-xs font-medium text-foreground hover:bg-accent hover:text-background hover:border-accent transition-colors duration-150"
-              >
-                {tag.name}
-              </a>
-            ))}
-            <a
-              href="/tags"
-              class="inline-flex px-3 py-1 bg-background border border-border rounded-full text-xs font-medium text-foreground hover:bg-accent hover:text-background hover:border-accent transition-colors duration-150"
-            >
-              Все теги
             </a>
-          </div>
-        </section>
 
-        <script define:vars={{ PAGE_LIMIT, PLACEHOLDER_IMAGE_URL }}>
-          (function() {
-            var grid = document.getElementById('article-feed-grid');
-            var moreBtn = document.getElementById('article-feed-more');
-            if (!grid || !moreBtn) return;
+            {/* Top stories stack */}
+            <div class="home-hero__stack">
+              <p class="home-section-label">{labelHomeMain}</p>
+              {topArticles.map((article) => (
+                <a href={article.href} class="home-hero__side-item group">
+                  <div class="home-hero__side-img-wrap">
+                    <img
+                      src={article.imageUrl}
+                      alt={article.imageAlt}
+                      width={120}
+                      height={80}
+                      loading="lazy"
+                      class="home-hero__side-img"
+                      onerror={`this.onerror=null;this.src='${PLACEHOLDER_IMAGE_URL}'`}
+                    />
+                  </div>
+                  <div class="home-hero__side-body">
+                    {article.category && (
+                      <span class="home-cat-tag">{article.category}</span>
+                    )}
+                    <h3 class="home-hero__side-title">{article.title}</h3>
+                    <p class="home-hero__side-meta">{article.authorName}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
 
-              var wrappers = Array.prototype.slice.call(
-                grid.querySelectorAll('[data-index]')
-              );
+        {/* ── LATEST NEWS + sidebar (Popular, Tags, Ad) ── */}
+        <div class="home-two-col">
 
-              if (wrappers.length < PAGE_LIMIT) {
-                moreBtn.style.display = 'none';
-                return;
-              }
+          {/* Left: latest feed */}
+          <section class="home-feed" id="article-feed">
+            <p class="home-section-label">{labelHomeLatest}</p>
 
-              var currentPage = 1;
-              var isLoading = false;
-              var hasMore = true;
+            <div id="article-feed-grid" class="home-feed__grid">
+              {feedArticles.map((article, index) => (
+                <>
+                  {/* Must-read banner injected after item 7 */}
+                  {index === 7 && mustReadArticles.length > 0 && (
+                    <div class="home-mustread">
+                      <p class="home-section-label">{labelHomeMustRead}</p>
+                      <div class="home-mustread__grid">
+                        {mustReadArticles.map((mr) => (
+                          <a href={mr.href} class="home-mustread__item group">
+                            <div class="home-mustread__img-wrap">
+                              <img
+                                src={mr.imageUrl}
+                                alt={mr.imageAlt}
+                                width={480}
+                                height={270}
+                                loading="lazy"
+                                class="home-mustread__img"
+                                onerror={`this.onerror=null;this.src='${PLACEHOLDER_IMAGE_URL}'`}
+                              />
+                            </div>
+                            {mr.category && <span class="home-cat-tag">{mr.category}</span>}
+                            <h3 class="home-mustread__title">{mr.title}</h3>
+                            <p class="home-mustread__meta">{mr.authorName}</p>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-              function buildArticlePath(doc) {
-                var slug = doc.slug || '';
-                var id = doc.id != null ? String(doc.id) : '';
-                if (slug && id) return '/article/' + slug + '-' + id + '.html';
-                if (slug) return '/article/' + slug;
-                if (id) return '/article/' + id;
-                return '/';
-              }
+                  <div class:list={['home-news-item', index >= 14 ? 'hidden' : '']} data-index={index}>
+                    <a href={article.href} class="home-news-item__link group">
+                      <div class="home-news-item__img-wrap">
+                        <img
+                          src={article.imageUrl}
+                          alt={article.imageAlt}
+                          width={160}
+                          height={107}
+                          loading="lazy"
+                          class="home-news-item__img"
+                          onerror={`this.onerror=null;this.src='${article.fallbackImageUrl}'`}
+                        />
+                      </div>
+                      <div class="home-news-item__body">
+                        {article.category && (
+                          <span class="home-cat-tag">{article.category}</span>
+                        )}
+                        <h3 class="home-news-item__title">{article.title}</h3>
+                        <p class="home-news-item__meta">{article.authorName}</p>
+                      </div>
+                    </a>
+                  </div>
+                </>
+              ))}
+            </div>
 
-              function getCoverImage(doc) {
-                if (doc.feedImageUrl) {
-                  return { url: doc.feedImageUrl, alt: doc.title || '' };
-                }
-                var cover = doc.coverImage && typeof doc.coverImage === 'object'
-                  ? doc.coverImage
-                  : null;
-                var url = (cover && cover.url) || PLACEHOLDER_IMAGE_URL;
-                var alt = (cover && cover.alt) || (doc.title || '');
-                return { url: url, alt: alt };
-              }
+            <div class="home-feed__more-wrap">
+              <button id="article-feed-more" type="button" class="home-feed__more-btn">
+                {currentLanguage === 'en' ? 'Load more' : 'Показать ещё'}
+              </button>
+            </div>
+          </section>
 
-              function getCategoryName(doc) {
-                var categories = Array.isArray(doc.categories) ? doc.categories : [];
-                if (!categories.length) return '';
-                var first = categories[0];
-                if (first && typeof first === 'object') {
-                  return first.name || '';
-                }
-                return '';
-              }
+          {/* Right: sidebar */}
+          <aside class="home-sidebar">
 
-              function getAuthorName(doc) {
-                var author = doc.author;
-                if (author && typeof author === 'object') {
-                  return author.name || 'Unknown';
-                }
-                return 'Unknown';
-              }
+            {/* Popular */}
+            <div class="home-sidebar__section">
+              <p class="home-section-label">{labelHomePopular}</p>
+              <ol class="home-popular">
+                {popularArticles.map((article, i) => (
+                  <li class="home-popular__item">
+                    <a href={article.href} class="home-popular__link group">
+                      <span class="home-popular__num">{String(i + 1).padStart(2, '0')}</span>
+                      <div>
+                        {article.category && (
+                          <span class="home-cat-tag">{article.category}</span>
+                        )}
+                        <h3 class="home-popular__title">{article.title}</h3>
+                      </div>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </div>
 
-              function createCardWrapperFromDoc(doc, index) {
-                var cover = getCoverImage(doc);
-                var category = getCategoryName(doc);
-                var authorName = getAuthorName(doc);
-                var href = buildArticlePath(doc);
-                var title = doc.title || '';
-                var excerpt = doc.excerpt || '';
+            {/* Category blocks */}
+            {categoryBlocks.map((block) => (
+              <div class="home-sidebar__section">
+                <p class="home-section-label">
+                  <a href={`/categories/${block.category.slug}`} class="hover:text-accent transition-colors">
+                    {block.category.name}
+                  </a>
+                </p>
+                <ul class="home-catblock">
+                  {block.articles.map((article) => (
+                    <li class="home-catblock__item">
+                      <a href={article.href} class="home-catblock__link group">
+                        {article.category && (
+                          <span class="home-cat-tag">{article.category}</span>
+                        )}
+                        <h3 class="home-catblock__title">{article.title}</h3>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
 
-                var wrapper = document.createElement('div');
-                wrapper.setAttribute('data-index', String(index));
+            {/* Tags */}
+            <div class="home-sidebar__section">
+              <p class="home-section-label">{labelHomeTags}</p>
+              <div class="home-tags">
+                {displayTags.map((tag) => (
+                  <a href={`/tags/${tag.slug}`} class="home-tags__pill">{tag.name}</a>
+                ))}
+                <a href="/tags" class="home-tags__pill home-tags__pill--all">
+                  {currentLanguage === 'en' ? 'All tags →' : 'Все теги →'}
+                </a>
+              </div>
+            </div>
 
-                var link = document.createElement('a');
-                link.href = href;
-                link.className = 'flex gap-4 group';
+            {/* Ad slot */}
+            <div class="home-ad-slot">
+              <p class="home-ad-slot__label">Advertisement</p>
+              <div class="home-ad-slot__area" id="home-sidebar-ad"></div>
+            </div>
 
-                var imageWrapper = document.createElement('div');
-                imageWrapper.className = 'flex-shrink-0 w-32 md:w-40 overflow-hidden rounded-image';
+          </aside>
+        </div>
 
-                var img = document.createElement('img');
-                img.src = cover.url;
-                img.alt = cover.alt || '';
-                img.width = 200;
-                img.height = 130;
-                img.loading = 'lazy';
-                img.className = 'w-full h-full object-cover transition-transform duration-300 group-hover:scale-105';
-                img.onerror = function () {
-                  this.onerror = null;
-                  this.src = PLACEHOLDER_IMAGE_URL;
-                };
-
-                imageWrapper.appendChild(img);
-
-                var content = document.createElement('div');
-                content.className = 'flex-1 border-b border-border pb-4';
-
-                if (category) {
-                  var catP = document.createElement('p');
-                  catP.className = 'text-[11px] font-semibold tracking-[0.18em] uppercase text-accent';
-                  catP.textContent = category;
-                  content.appendChild(catP);
-                }
-
-                var titleEl = document.createElement('h3');
-                titleEl.className = 'text-sm md:text-base font-semibold text-foreground leading-snug line-clamp-2 group-hover:underline';
-                titleEl.textContent = title;
-                content.appendChild(titleEl);
-
-                if (excerpt) {
-                  var excerptP = document.createElement('p');
-                  excerptP.className = 'text-sm text-muted leading-relaxed line-clamp-3';
-                  excerptP.textContent = excerpt;
-                  content.appendChild(excerptP);
-                }
-
-                var authorEl = document.createElement('p');
-                authorEl.className = 'text-[11px] text-muted mt-1';
-                authorEl.textContent = authorName;
-                content.appendChild(authorEl);
-
-                link.appendChild(imageWrapper);
-                link.appendChild(content);
-                wrapper.appendChild(link);
-
-                return wrapper;
-              }
-
-              async function loadMore() {
-                if (isLoading || !hasMore) return;
-                isLoading = true;
-                moreBtn.disabled = true;
-
-                try {
-                  var nextPage = currentPage + 1;
-                  var res = await fetch('/api/frontend/articles?page=' + nextPage + '&limit=' + PAGE_LIMIT);
-                  if (!res.ok) {
-                    throw new Error('HTTP ' + res.status);
-                  }
-                  var data = await res.json();
-                  var docs = Array.isArray(data.docs) ? data.docs : [];
-
-                  if (!docs.length) {
-                    hasMore = false;
-                    moreBtn.style.display = 'none';
-                    return;
-                  }
-
-                  for (var i = 0; i < docs.length; i++) {
-                    var overallIndex = wrappers.length;
-                    var wrapper = createCardWrapperFromDoc(docs[i], overallIndex);
-                    wrappers.push(wrapper);
-                    grid.appendChild(wrapper);
-                  }
-
-                  currentPage = typeof data.page === 'number' ? data.page : nextPage;
-
-                  if (
-                    (typeof data.hasNextPage === 'boolean' && !data.hasNextPage) ||
-                    (typeof data.totalPages === 'number' && typeof data.page === 'number' && data.page >= data.totalPages) ||
-                    (data.nextPage == null)
-                  ) {
-                    hasMore = false;
-                    moreBtn.style.display = 'none';
-                  }
-                } catch (e) {
-                  console.error('Failed to load more articles', e);
-                  hasMore = false;
-                  moreBtn.style.display = 'none';
-                } finally {
-                  isLoading = false;
-                  moreBtn.disabled = false;
-                }
-              }
-
-            moreBtn.addEventListener('click', function () {
-              loadMore();
-            });
-          })();
-        </script>
       </>
     )}
   </MainColumns>
 </BaseLayout>
+
+<style>
+/* ─────────────────────────────────────────
+   Design tokens — match article page palette
+───────────────────────────────────────── */
+:root {
+  --home-bg:          #faf9f7;
+  --home-surface:     #ffffff;
+  --home-surface2:    #f3f1ec;
+  --home-text:        #1a1a18;
+  --home-text2:       #4a4a45;
+  --home-muted:       #8a8a82;
+  --home-accent:      var(--accent, #2d6a4f);
+  --home-border:      #e2ddd6;
+  --home-border2:     #ccc8c0;
+  --home-radius:      6px;
+  --home-radius-sm:   4px;
+  --home-font-serif:  'Lora', Georgia, 'Times New Roman', serif;
+  --home-font-sans:   var(--font-sans, system-ui, sans-serif);
+}
+
+/* ── Section label ── */
+.home-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--home-muted);
+  margin-bottom: 1rem;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid var(--home-border);
+}
+
+/* ── Category tag pill ── */
+.home-cat-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--home-accent);
+  margin-bottom: 5px;
+}
+
+/* ─────────────────────────────────────────
+   HERO
+───────────────────────────────────────── */
+.home-hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  border: 1px solid var(--home-border);
+  border-radius: var(--home-radius);
+  overflow: hidden;
+  background: var(--home-surface);
+  margin-bottom: 2.5rem;
+}
+
+@media (min-width: 900px) {
+  .home-hero {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  }
+}
+
+/* Main article */
+.home-hero__main {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  border-bottom: 1px solid var(--home-border);
+}
+
+@media (min-width: 900px) {
+  .home-hero__main {
+    border-bottom: none;
+    border-right: 1px solid var(--home-border);
+  }
+}
+
+.home-hero__img-wrap {
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.home-hero__img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.home-hero__main:hover .home-hero__img {
+  transform: scale(1.03);
+}
+
+.home-hero__body {
+  padding: 1.25rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.home-hero__title {
+  font-family: var(--home-font-serif);
+  font-size: clamp(20px, 2.5vw, 26px);
+  font-weight: 600;
+  line-height: 1.28;
+  color: var(--home-text);
+  margin: 0 0 0.625rem;
+  transition: opacity 0.15s;
+}
+
+.home-hero__main:hover .home-hero__title {
+  opacity: 0.8;
+}
+
+.home-hero__excerpt {
+  font-size: 14px;
+  color: var(--home-text2);
+  line-height: 1.65;
+  margin-bottom: 0.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.home-hero__meta {
+  font-size: 11px;
+  color: var(--home-muted);
+  margin-top: auto;
+}
+
+/* Top stories stack */
+.home-hero__stack {
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.25rem 0.5rem;
+}
+
+.home-hero__side-item {
+  display: flex;
+  gap: 12px;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid var(--home-border);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.home-hero__side-item:last-child {
+  border-bottom: none;
+}
+
+.home-hero__side-item:hover {
+  opacity: 0.75;
+}
+
+.home-hero__side-img-wrap {
+  flex-shrink: 0;
+  width: 88px;
+  height: 62px;
+  border-radius: var(--home-radius-sm);
+  overflow: hidden;
+}
+
+.home-hero__side-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.home-hero__side-item:hover .home-hero__side-img {
+  transform: scale(1.05);
+}
+
+.home-hero__side-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-hero__side-title {
+  font-family: var(--home-font-serif);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--home-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.home-hero__side-meta {
+  font-size: 11px;
+  color: var(--home-muted);
+  margin-top: auto;
+}
+
+/* ─────────────────────────────────────────
+   TWO-COLUMN LAYOUT: feed + sidebar
+───────────────────────────────────────── */
+.home-two-col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .home-two-col {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 3rem;
+  }
+}
+
+/* ─────────────────────────────────────────
+   LATEST NEWS FEED
+───────────────────────────────────────── */
+.home-feed__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Individual news item */
+.home-news-item {
+  border-bottom: 1px solid var(--home-border);
+}
+
+.home-news-item:last-child {
+  border-bottom: none;
+}
+
+.home-news-item__link {
+  display: flex;
+  gap: 14px;
+  padding: 1rem 0;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.home-news-item__link:hover {
+  opacity: 0.75;
+}
+
+.home-news-item__img-wrap {
+  flex-shrink: 0;
+  width: 110px;
+  height: 74px;
+  border-radius: var(--home-radius-sm);
+  overflow: hidden;
+}
+
+@media (min-width: 600px) {
+  .home-news-item__img-wrap {
+    width: 140px;
+    height: 93px;
+  }
+}
+
+.home-news-item__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.home-news-item__link:hover .home-news-item__img {
+  transform: scale(1.04);
+}
+
+.home-news-item__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.home-news-item__title {
+  font-family: var(--home-font-serif);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.42;
+  color: var(--home-text);
+  margin-bottom: 5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.home-news-item__meta {
+  font-size: 11px;
+  color: var(--home-muted);
+}
+
+/* Must-read block */
+.home-mustread {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--home-border);
+}
+
+.home-mustread__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 600px) {
+  .home-mustread__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.home-mustread__item {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.home-mustread__item:hover {
+  opacity: 0.8;
+}
+
+.home-mustread__img-wrap {
+  border-radius: var(--home-radius);
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.home-mustread__img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.home-mustread__item:hover .home-mustread__img {
+  transform: scale(1.03);
+}
+
+.home-mustread__title {
+  font-family: var(--home-font-serif);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--home-text);
+  margin-bottom: 5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.home-mustread__meta {
+  font-size: 11px;
+  color: var(--home-muted);
+}
+
+/* Load more button */
+.home-feed__more-wrap {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.home-feed__more-btn {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--home-text2);
+  background: var(--home-surface);
+  border: 1px solid var(--home-border2);
+  border-radius: 40px;
+  padding: 9px 28px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.home-feed__more-btn:hover {
+  border-color: var(--home-accent);
+  color: var(--home-accent);
+}
+
+.home-feed__more-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────
+   SIDEBAR
+───────────────────────────────────────── */
+.home-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.home-sidebar__section {
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--home-border);
+}
+
+.home-sidebar__section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+/* Popular list */
+.home-popular {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.home-popular__item {
+  border-bottom: 1px solid var(--home-border);
+}
+
+.home-popular__item:last-child {
+  border-bottom: none;
+}
+
+.home-popular__link {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 0.875rem 0;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.home-popular__link:hover {
+  opacity: 0.75;
+}
+
+.home-popular__num {
+  font-family: var(--home-font-serif);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--home-border2);
+  line-height: 1;
+  flex-shrink: 0;
+  width: 26px;
+  padding-top: 3px;
+}
+
+.home-popular__title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--home-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Category block in sidebar */
+.home-catblock {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-catblock__item {
+  border-bottom: 1px solid var(--home-border);
+}
+
+.home-catblock__item:last-child {
+  border-bottom: none;
+}
+
+.home-catblock__link {
+  display: block;
+  padding: 0.75rem 0;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.home-catblock__link:hover {
+  opacity: 0.75;
+}
+
+.home-catblock__title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.42;
+  color: var(--home-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Tags */
+.home-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.home-tags__pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--home-text2);
+  background: var(--home-surface2);
+  border: 1px solid var(--home-border);
+  border-radius: 20px;
+  padding: 5px 13px;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.home-tags__pill:hover {
+  border-color: var(--home-accent);
+  color: var(--home-accent);
+  background: #d8f3dc;
+}
+
+.home-tags__pill--all {
+  font-weight: 500;
+  color: var(--home-accent);
+  border-color: var(--home-accent);
+}
+
+/* Ad slot */
+.home-ad-slot {
+  background: var(--home-surface2);
+  border: 1px dashed var(--home-border2);
+  border-radius: var(--home-radius);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.home-ad-slot__label {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--home-muted);
+  margin-bottom: 0.5rem;
+}
+
+.home-ad-slot__area {
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* hidden utility (Tailwind may provide this, keep as fallback) */
+.hidden { display: none !important; }
+</style>
+
+<script define:vars={{ PAGE_LIMIT, PLACEHOLDER_IMAGE_URL }}>
+  (function () {
+    var grid = document.getElementById('article-feed-grid');
+    var moreBtn = document.getElementById('article-feed-more');
+    if (!grid || !moreBtn) return;
+
+    var wrappers = Array.prototype.slice.call(grid.querySelectorAll('[data-index]'));
+
+    if (wrappers.length < PAGE_LIMIT) {
+      moreBtn.style.display = 'none';
+      return;
+    }
+
+    var currentPage = 1;
+    var isLoading = false;
+    var hasMore = true;
+
+    function buildArticlePath(doc) {
+      var slug = doc.slug || '';
+      var id = doc.id != null ? String(doc.id) : '';
+      if (slug && id) return '/article/' + slug + '-' + id + '.html';
+      if (slug) return '/article/' + slug;
+      if (id) return '/article/' + id;
+      return '/';
+    }
+
+    function getCoverImage(doc) {
+      if (doc.feedImageUrl) return { url: doc.feedImageUrl, alt: doc.title || '' };
+      var cover = doc.coverImage && typeof doc.coverImage === 'object' ? doc.coverImage : null;
+      return { url: (cover && cover.url) || PLACEHOLDER_IMAGE_URL, alt: (cover && cover.alt) || (doc.title || '') };
+    }
+
+    function getCategoryName(doc) {
+      var cats = Array.isArray(doc.categories) ? doc.categories : [];
+      if (!cats.length) return '';
+      var first = cats[0];
+      return (first && typeof first === 'object') ? (first.name || '') : '';
+    }
+
+    function getAuthorName(doc) {
+      var a = doc.author;
+      return (a && typeof a === 'object') ? (a.name || 'Unknown') : 'Unknown';
+    }
+
+    function createCard(doc, index) {
+      var cover = getCoverImage(doc);
+      var category = getCategoryName(doc);
+      var authorName = getAuthorName(doc);
+      var href = buildArticlePath(doc);
+
+      var wrap = document.createElement('div');
+      wrap.className = 'home-news-item';
+      wrap.setAttribute('data-index', String(index));
+
+      var link = document.createElement('a');
+      link.href = href;
+      link.className = 'home-news-item__link group';
+
+      var imgWrap = document.createElement('div');
+      imgWrap.className = 'home-news-item__img-wrap';
+
+      var img = document.createElement('img');
+      img.src = cover.url;
+      img.alt = cover.alt || '';
+      img.width = 160;
+      img.height = 107;
+      img.loading = 'lazy';
+      img.className = 'home-news-item__img';
+      img.onerror = function () { this.onerror = null; this.src = PLACEHOLDER_IMAGE_URL; };
+      imgWrap.appendChild(img);
+
+      var body = document.createElement('div');
+      body.className = 'home-news-item__body';
+
+      if (category) {
+        var cat = document.createElement('span');
+        cat.className = 'home-cat-tag';
+        cat.textContent = category;
+        body.appendChild(cat);
+      }
+
+      var title = document.createElement('h3');
+      title.className = 'home-news-item__title';
+      title.textContent = doc.title || '';
+      body.appendChild(title);
+
+      var meta = document.createElement('p');
+      meta.className = 'home-news-item__meta';
+      meta.textContent = authorName;
+      body.appendChild(meta);
+
+      link.appendChild(imgWrap);
+      link.appendChild(body);
+      wrap.appendChild(link);
+      return wrap;
+    }
+
+    async function loadMore() {
+      if (isLoading || !hasMore) return;
+      isLoading = true;
+      moreBtn.disabled = true;
+      try {
+        var nextPage = currentPage + 1;
+        var res = await fetch('/api/frontend/articles?page=' + nextPage + '&limit=' + PAGE_LIMIT);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var data = await res.json();
+        var docs = Array.isArray(data.docs) ? data.docs : [];
+
+        if (!docs.length) { hasMore = false; moreBtn.style.display = 'none'; return; }
+
+        for (var i = 0; i < docs.length; i++) {
+          var card = createCard(docs[i], wrappers.length);
+          wrappers.push(card);
+          grid.appendChild(card);
+        }
+
+        currentPage = typeof data.page === 'number' ? data.page : nextPage;
+
+        if (
+          (typeof data.hasNextPage === 'boolean' && !data.hasNextPage) ||
+          (typeof data.totalPages === 'number' && typeof data.page === 'number' && data.page >= data.totalPages) ||
+          data.nextPage == null
+        ) {
+          hasMore = false;
+          moreBtn.style.display = 'none';
+        }
+      } catch (e) {
+        console.error('Failed to load more articles', e);
+        hasMore = false;
+        moreBtn.style.display = 'none';
+      } finally {
+        isLoading = false;
+        moreBtn.disabled = false;
+      }
+    }
+
+    moreBtn.addEventListener('click', loadMore);
+  })();
+</script>
