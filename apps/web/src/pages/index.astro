@@ -215,7 +215,7 @@ const tags = await fetchTags();
 const displayTags = tags.slice(0, 20);
 const homeCategories = await fetchHomeCategories();
 
-const defaultCategoryLabel = currentLanguage === 'en' ? 'Articles' : 'Статьи';
+
 
 const latestArticles: HomeArticle[] = articles.map((article) => {
   const { url, alt } = getCoverImage(article);
@@ -273,6 +273,7 @@ try {
 } catch (e) {}
 
 const currentLanguage: SiteLanguage = siteSettings?.currentLanguage === 'en' ? 'en' : 'ru';
+const defaultCategoryLabel = currentLanguage === 'en' ? 'Articles' : 'Статьи';
 const L = (en: string | undefined, ru: string | undefined, defEn: string, defRu: string) =>
   currentLanguage === 'en' ? (en || defEn) : (ru || defRu);
 
