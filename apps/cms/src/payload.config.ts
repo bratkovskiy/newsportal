@@ -1553,6 +1553,7 @@ const LegalPage: GlobalConfig = {
       name: 'contentRu',
       label: 'Контент (RU)',
       type: 'textarea',
+      maxLength: 100000,
       admin: {
         description: 'HTML для русской версии страницы /legal/.',
       },
@@ -1561,6 +1562,7 @@ const LegalPage: GlobalConfig = {
       name: 'contentEn',
       label: 'Контент (EN)',
       type: 'textarea',
+      maxLength: 100000,
       admin: {
         description: 'HTML для английской версии страницы /legal/.',
       },
@@ -1585,6 +1587,7 @@ const PrivacyPage: GlobalConfig = {
       name: 'contentRu',
       label: 'Контент (RU)',
       type: 'textarea',
+      maxLength: 100000,
       admin: {
         description: 'HTML для русской версии страницы /privacy-policy/.',
       },
@@ -1593,6 +1596,7 @@ const PrivacyPage: GlobalConfig = {
       name: 'contentEn',
       label: 'Контент (EN)',
       type: 'textarea',
+      maxLength: 100000,
       admin: {
         description: 'HTML для английской версии страницы /privacy-policy/.',
       },
@@ -1617,6 +1621,7 @@ const CookiesPage: GlobalConfig = {
       name: 'contentRu',
       label: 'Контент (RU)',
       type: 'textarea',
+      maxLength: 100000,
       admin: {
         description: 'HTML для русской версии страницы /cookies-policy/.',
       },
@@ -1625,6 +1630,7 @@ const CookiesPage: GlobalConfig = {
       name: 'contentEn',
       label: 'Контент (EN)',
       type: 'textarea',
+      maxLength: 100000,
       admin: {
         description: 'HTML для английской версии страницы /cookies-policy/.',
       },
@@ -1649,6 +1655,7 @@ const ContactsPage: GlobalConfig = {
       name: 'contentRu',
       label: 'Контент (RU)',
       type: 'textarea',
+      maxLength: 100000,
       admin: {
         description: 'HTML для русской версии страницы /contacts/.',
       },
@@ -1657,6 +1664,7 @@ const ContactsPage: GlobalConfig = {
       name: 'contentEn',
       label: 'Контент (EN)',
       type: 'textarea',
+      maxLength: 100000,
       admin: {
         description: 'HTML для английской версии страницы /contacts/.',
       },
