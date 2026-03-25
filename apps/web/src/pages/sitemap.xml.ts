@@ -1,18 +1,14 @@
 import type { APIRoute } from 'astro';
+import { getSiteUrl } from '../utils/siteUrl';
 
-// Базовый URL сайта и CMS берём из env, с безопасными фолбэками
-const env = ((import.meta as any).env || {}) as Record<string, string | undefined>;
-const site: string = (env.PUBLIC_SITE_URL as string | undefined)
-  || (env.SITE as string | undefined)
-  || 'http://localhost:4321';
-const CMS_URL: string = (env.CMS_URL as string | undefined) || 'http://cms:3000';
+const CMS_URL: string = (((import.meta as any).env || {}) as Record<string, string | undefined>).CMS_URL || 'http://cms:3000';
 
 type PageEntry = { url: string; lastmod: Date };
 
 // Ограничение sitemaps.org: максимум 50 000 URL в одном sitemap-файле
 const SITEMAP_LIMIT = 50000;
 
-const generateSitemap = (pageEntries: PageEntry[]) => {
+const generateSitemap = (pageEntries: PageEntry[], site: string) => {
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${pageEntries
@@ -27,7 +23,7 @@ ${pageEntries
   return sitemap;
 };
 
-const generateSitemapIndex = (chunks: PageEntry[][]) => {
+const generateSitemapIndex = (chunks: PageEntry[][], site: string) => {
   const now = new Date();
 
   const indexXml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -103,6 +99,7 @@ function buildArticlePath(article: any): string {
 }
 
 export const GET: APIRoute = async ({ request }) => {
+  const site = getSiteUrl(request);
   const entries: PageEntry[] = [];
   const now = new Date();
 
@@ -174,7 +171,7 @@ export const GET: APIRoute = async ({ request }) => {
 
   if (total === 0) {
     // Фолбек: хотя бы главная страница
-    const fallback = generateSitemap([{ url: '/', lastmod: new Date() }]);
+    const fallback = generateSitemap([{ url: '/', lastmod: new Date() }], site);
     return new Response(fallback, {
       headers: {
         'Content-Type': 'application/xml',
@@ -191,7 +188,7 @@ export const GET: APIRoute = async ({ request }) => {
   if (!pageParam || !Number.isFinite(page) || page < 1 || page > totalPages) {
     // Отдаём sitemap index
     if (totalPages === 1) {
-      const sitemapContent = generateSitemap(entries);
+      const sitemapContent = generateSitemap(entries, site);
       return new Response(sitemapContent, {
         headers: {
           'Content-Type': 'application/xml',
@@ -206,7 +203,7 @@ export const GET: APIRoute = async ({ request }) => {
       chunks.push(entries.slice(start, end));
     }
 
-    const indexContent = generateSitemapIndex(chunks);
+    const indexContent = generateSitemapIndex(chunks, site);
     return new Response(indexContent, {
       headers: {
         'Content-Type': 'application/xml',
@@ -218,7 +215,7 @@ export const GET: APIRoute = async ({ request }) => {
   const start = (page - 1) * SITEMAP_LIMIT;
   const end = start + SITEMAP_LIMIT;
   const pageEntries = entries.slice(start, end);
-  const sitemapContent = generateSitemap(pageEntries);
+  const sitemapContent = generateSitemap(pageEntries, site);
 
   return new Response(sitemapContent, {
     headers: {

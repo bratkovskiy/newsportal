@@ -1,17 +1,7 @@
 import type { APIRoute } from 'astro';
+import { getSiteUrl } from '../utils/siteUrl';
 
 const CMS_URL = import.meta.env.CMS_URL || 'http://cms:3000';
-
-function getSiteUrl(request: Request): string {
-  const envSite = (import.meta as any).env?.SITE as string | undefined;
-  if (envSite) {
-    return envSite;
-  }
-
-  // Fallback: construct from request headers
-  const url = new URL(request.url);
-  return url.origin;
-}
 
 async function getRobotsContent(siteUrl: string): Promise<string> {
   const defaultContent = `User-agent: *\nAllow: /\n\nSitemap: ${new URL('sitemap.xml', siteUrl).href}`;
