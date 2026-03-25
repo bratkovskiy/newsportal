@@ -401,52 +401,6 @@ if (payloadArticle?.id) {
 
 const metaTitle = payloadArticle?.title ?? '';
 const metaDescription = payloadArticle?.excerpt ?? '';
-
-// Latest articles for sidebar
-let latestArticles: Array<{
-  title: string;
-  href: string;
-  tag: string;
-  coverImage?: string;
-}> = [];
-
-try {
-  const latestUrl = new URL('/api/articles', CMS_URL);
-  latestUrl.searchParams.set('where[status][equals]', 'published');
-  latestUrl.searchParams.set('limit', '5');
-  latestUrl.searchParams.set('depth', '1');
-  latestUrl.searchParams.set('sort', '-publishedDate');
-
-  const latestRes = await fetch(latestUrl.toString());
-  if (latestRes.ok) {
-    const { docs } = await latestRes.json();
-    for (const doc of docs as PayloadArticle[]) {
-      // Skip current article
-      if (payloadArticle && String(doc.id) === String(payloadArticle.id)) continue;
-      
-      let coverImg = '';
-      if (doc.feedImageUrl) {
-        coverImg = doc.feedImageUrl;
-      } else if (doc.coverImage && typeof doc.coverImage === 'object' && (doc.coverImage as any).url) {
-        coverImg = new URL((doc.coverImage as any).url, CMS_URL).toString();
-      }
-
-      const docFirstTag = Array.isArray(doc.tags) && doc.tags.length > 0 ? doc.tags[0] : null;
-      const docTagName = docFirstTag && typeof docFirstTag === 'object' ? docFirstTag.name ?? '' : '';
-
-      latestArticles.push({
-        title: doc.title ?? '',
-        href: buildArticlePath(doc),
-        tag: docTagName || (typeof doc.categories?.[0] === 'object' ? doc.categories[0].name ?? '' : ''),
-        coverImage: coverImg,
-      });
-      
-      if (latestArticles.length >= 5) break;
-    }
-  }
-} catch (e) {
-  console.error('Error fetching latest articles:', e);
-}
 ---
 
 {payloadArticle ? (
@@ -514,34 +468,6 @@ try {
               <div class="art-related__body">
                 {rel.tag && <span class="art-related__cat">{rel.tag}</span>}
                 <h3 class="art-related__title">{rel.title}</h3>
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
-    )}
-
-    {latestArticles.length > 0 && (
-      <div slot="right" class="latest-news">
-        <h3 class="latest-news__title">Latest News</h3>
-        <div class="latest-news__list">
-          {latestArticles.map((article) => (
-            <a href={article.href} class="latest-news__item">
-              {article.coverImage && (
-                <div class="latest-news__img-wrap">
-                  <img
-                    src={article.coverImage}
-                    alt={article.title}
-                    width={80}
-                    height={80}
-                    loading="lazy"
-                    class="latest-news__img"
-                  />
-                </div>
-              )}
-              <div class="latest-news__body">
-                {article.tag && <span class="latest-news__tag">{article.tag}</span>}
-                <h4 class="latest-news__item-title">{article.title}</h4>
               </div>
             </a>
           ))}

@@ -244,15 +244,8 @@ const latestArticles: HomeArticle[] = articles.map((article) => {
 const { mainArticle, topArticles, mustReadArticles, popularArticles, categoryBlocks } =
   selectHomeLayout(latestArticles, homeCategories);
 
-const featuredIds = new Set<string>([
-  ...(mainArticle ? [mainArticle.id] : []),
-  ...topArticles.map(a => a.id),
-  ...mustReadArticles.map(a => a.id),
-  ...popularArticles.map(a => a.id),
-  ...categoryBlocks.flatMap(b => b.articles.map(a => a.id)),
-]);
-
-const feedArticles = latestArticles.filter(a => !featuredIds.has(a.id));
+// Latest Materials: fixed 20 most recent articles sorted by date
+const feedArticles = sortByDateThenViews(latestArticles).slice(0, 20);
 
 type SiteLanguage = 'ru' | 'en';
 type SiteSettings = {
@@ -278,7 +271,7 @@ const L = (en: string | undefined, ru: string | undefined, defEn: string, defRu:
   currentLanguage === 'en' ? (en || defEn) : (ru || defRu);
 
 const labelHomeMain    = L(siteSettings?.labels?.homeMainEn,    siteSettings?.labels?.homeMainRu,    'Top stories',        'Главное');
-const labelHomeLatest  = L(siteSettings?.labels?.homeLatestEn,  siteSettings?.labels?.homeLatestRu,  'Latest news',        'Последние новости');
+const labelHomeLatest  = L(siteSettings?.labels?.homeLatestEn,  siteSettings?.labels?.homeLatestRu,  'Latest Materials',   'Последние материалы');
 const labelHomeMustRead= L(siteSettings?.labels?.homeMustReadEn,siteSettings?.labels?.homeMustReadRu,'Must-Read Stories',  'Must-Read Stories');
 const labelHomePopular = L(siteSettings?.labels?.homePopularEn, siteSettings?.labels?.homePopularRu, 'Popular',            'Популярное');
 const labelHomeTags    = L(siteSettings?.labels?.homeTagsEn,    siteSettings?.labels?.homeTagsRu,    'Tags',               'Теги');
