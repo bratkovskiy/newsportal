@@ -150,6 +150,14 @@ const category = firstCategory && typeof firstCategory === 'object'
   ? { name: firstCategory.name ?? '', slug: firstCategory.slug ?? '' }
   : { name: '', slug: '' };
 
+const firstTag = Array.isArray(payloadArticle?.tags) && payloadArticle.tags.length > 0
+  ? payloadArticle.tags[0]
+  : null;
+
+const tag = firstTag && typeof firstTag === 'object'
+  ? { name: firstTag.name ?? '', slug: firstTag.slug ?? '' }
+  : { name: '', slug: '' };
+
 // Author info
 const authorObj = payloadArticle?.author && typeof payloadArticle.author === 'object'
   ? payloadArticle.author
@@ -297,20 +305,20 @@ function calcReadingTime(html: string): number {
 }
 const readingTime = calcReadingTime(articleHtml);
 
-// Related articles (from same category)
+// Related articles (from same tag)
 let relatedArticles: Array<{
   title: string;
   slug: string;
   href: string;
-  category: string;
+  tag: string;
   coverImage?: string;
 }> = [];
 
-if (category.slug && payloadArticle?.id) {
+if (tag.slug && payloadArticle?.id) {
   try {
     const relatedUrl = new URL('/api/articles', CMS_URL);
     relatedUrl.searchParams.set('where[status][equals]', 'published');
-    relatedUrl.searchParams.set('where[categories.slug][equals]', category.slug);
+    relatedUrl.searchParams.set('where[tags.slug][equals]', tag.slug);
     relatedUrl.searchParams.set('limit', '5');
     relatedUrl.searchParams.set('depth', '1');
     relatedUrl.searchParams.set('sort', '-publishedDate');
@@ -333,7 +341,7 @@ if (category.slug && payloadArticle?.id) {
             title: doc.title ?? '',
             slug: doc.slug ?? '',
             href: buildArticlePath(doc),
-            category: category.name,
+            tag: tag.name,
             coverImage: coverImg,
           };
         });
@@ -351,7 +359,7 @@ const metaDescription = payloadArticle?.excerpt ?? '';
   <ArticleLayout
     title={metaTitle}
     excerpt={metaDescription}
-    category={category}
+    category={tag.slug ? tag : category}
     author={author}
     publishedDate={publishedDate instanceof Date ? publishedDate.toISOString() : publishedDate}
     coverImage={coverImageUrl}
@@ -410,7 +418,7 @@ const metaDescription = payloadArticle?.excerpt ?? '';
                 </div>
               )}
               <div class="art-related__body">
-                {rel.category && <span class="art-related__cat">{rel.category}</span>}
+                {rel.tag && <span class="art-related__cat">{rel.tag}</span>}
                 <h3 class="art-related__title">{rel.title}</h3>
               </div>
             </a>

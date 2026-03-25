@@ -39,7 +39,7 @@ const metaDescription = await generateArticleDescription(excerpt);
       <header class="article-page__header">
 
         {category?.name && (
-          <a href={category.slug ? `/categories/${category.slug}` : '#'} class="article-page__cat-tag">
+          <a href={category.slug ? `/tags/${category.slug}` : '#'} class="article-page__cat-tag">
             {category.name}
           </a>
         )}
