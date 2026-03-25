@@ -24,6 +24,7 @@ import * as migration_2025_12_13_04_add_cookies_page_global from './2025-12-13-0
 import * as migration_2025_12_13_05_add_contacts_page_global from './2025-12-13-05-add-contacts-page-global';
 import * as migration_2025_12_14_01_add_articles_noindex from './2025-12-14-01-add-articles-noindex';
 import * as migration_2025_12_14_02_add_article_versions_noindex from './2025-12-14-02-add-article-versions-noindex';
+import * as migration_2025_12_15_01_add_seo_texts_to_site_settings from './2025-12-15-01-add-seo-texts-to-site-settings';
 import * as migration_20260319_100737 from './20260319_100737';
 
 export const migrations = [
@@ -53,5 +54,6 @@ export const migrations = [
   { up: migration_2025_12_13_05_add_contacts_page_global.up, down: migration_2025_12_13_05_add_contacts_page_global.down, name: '2025-12-13-05-add-contacts-page-global' },
   { up: migration_2025_12_14_01_add_articles_noindex.up, down: migration_2025_12_14_01_add_articles_noindex.down, name: '2025-12-14-01-add-articles-noindex' },
   { up: migration_2025_12_14_02_add_article_versions_noindex.up, down: migration_2025_12_14_02_add_article_versions_noindex.down, name: '2025-12-14-02-add-article-versions-noindex' },
+  { up: migration_2025_12_15_01_add_seo_texts_to_site_settings.up, down: migration_2025_12_15_01_add_seo_texts_to_site_settings.down, name: '2025-12-15-01-add-seo-texts-to-site-settings' },
   { up: migration_20260319_100737.up, down: migration_20260319_100737.down, name: '20260319_100737' },
 ];

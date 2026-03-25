@@ -1346,6 +1346,175 @@ const SiteSettings: GlobalConfig = {
       ],
     },
     {
+      name: 'seo',
+      label: 'SEO-тексты',
+      type: 'group',
+      fields: [
+        {
+          name: 'homeTitleEn',
+          label: 'Главная: Title (EN)',
+          type: 'text',
+          defaultValue: 'Latest Fashion News & Style Trends',
+          admin: {
+            description: 'Шаблон title для главной страницы (EN). Используется как "{homeTitleEn} | {siteName}"',
+          },
+        },
+        {
+          name: 'homeTitleRu',
+          label: 'Главная: Title (RU)',
+          type: 'text',
+          defaultValue: 'Последние новости сегодня',
+          admin: {
+            description: 'Шаблон title для главной страницы (RU). Используется как "{homeTitleRu} | {siteName}"',
+          },
+        },
+        {
+          name: 'homeDescriptionEn',
+          label: 'Главная: Description (EN)',
+          type: 'textarea',
+          defaultValue: 'Stay up to date with the latest fashion news, style trends and top stories on {siteName}.',
+          admin: {
+            description: 'Meta description для главной страницы (EN). {siteName} будет заменён на название сайта.',
+          },
+        },
+        {
+          name: 'homeDescriptionRu',
+          label: 'Главная: Description (RU)',
+          type: 'textarea',
+          defaultValue: 'Актуальные события, аналитика и топ-материалы на {siteName}.',
+          admin: {
+            description: 'Meta description для главной страницы (RU). {siteName} будет заменён на название сайта.',
+          },
+        },
+        {
+          name: 'categoryTitleSuffixEn',
+          label: 'Категория: суффикс Title (EN)',
+          type: 'text',
+          defaultValue: 'News & Articles',
+          admin: {
+            description: 'Используется как "{categoryName} — {categoryTitleSuffixEn} | {siteName}"',
+          },
+        },
+        {
+          name: 'categoryTitleSuffixRu',
+          label: 'Категория: суффикс Title (RU)',
+          type: 'text',
+          defaultValue: 'новости и статьи',
+          admin: {
+            description: 'Используется как "{categoryName} — {categoryTitleSuffixRu} | {siteName}"',
+          },
+        },
+        {
+          name: 'categoryDescriptionTemplateEn',
+          label: 'Категория: шаблон Description (EN)',
+          type: 'textarea',
+          defaultValue: '{count} fresh articles on {category}: news, opinions and analysis on {siteName}.',
+          admin: {
+            description: 'Шаблон description для категорий (EN). Доступны: {count}, {category}, {siteName}',
+          },
+        },
+        {
+          name: 'categoryDescriptionTemplateRu',
+          label: 'Категория: шаблон Description (RU)',
+          type: 'textarea',
+          defaultValue: '{count} свежих статей по теме {category}: новости, мнения и аналитика на {siteName}.',
+          admin: {
+            description: 'Шаблон description для категорий (RU). Доступны: {count}, {category}, {siteName}',
+          },
+        },
+        {
+          name: 'tagTitleSuffixEn',
+          label: 'Тег: суффикс Title (EN)',
+          type: 'text',
+          defaultValue: 'Articles, News & Reviews',
+          admin: {
+            description: 'Используется как "{tagName} — {tagTitleSuffixEn} | {siteName}"',
+          },
+        },
+        {
+          name: 'tagTitleSuffixRu',
+          label: 'Тег: суффикс Title (RU)',
+          type: 'text',
+          defaultValue: 'статьи, новости и обзоры',
+          admin: {
+            description: 'Используется как "{tagName} — {tagTitleSuffixRu} | {siteName}"',
+          },
+        },
+        {
+          name: 'tagDescriptionTemplateEn',
+          label: 'Тег: шаблон Description (EN)',
+          type: 'textarea',
+          defaultValue: '{count} articles tagged "{tag}": news, analysis and more on {siteName}.',
+          admin: {
+            description: 'Шаблон description для тегов (EN). Доступны: {count}, {tag}, {siteName}',
+          },
+        },
+        {
+          name: 'tagDescriptionTemplateRu',
+          label: 'Тег: шаблон Description (RU)',
+          type: 'textarea',
+          defaultValue: '{count} статей с тегом "{tag}": новости, аналитика и многое другое на {siteName}.',
+          admin: {
+            description: 'Шаблон description для тегов (RU). Доступны: {count}, {tag}, {siteName}',
+          },
+        },
+        {
+          name: 'searchTitleTemplateEn',
+          label: 'Поиск: шаблон Title (EN)',
+          type: 'text',
+          defaultValue: 'Search "{query}" — {count} results',
+          admin: {
+            description: 'Шаблон title для поиска (EN). Доступны: {query}, {count}, {siteName}',
+          },
+        },
+        {
+          name: 'searchTitleTemplateRu',
+          label: 'Поиск: шаблон Title (RU)',
+          type: 'text',
+          defaultValue: 'Поиск "{query}" — {count} результатов',
+          admin: {
+            description: 'Шаблон title для поиска (RU). Доступны: {query}, {count}, {siteName}',
+          },
+        },
+        {
+          name: 'searchDescriptionTemplateEn',
+          label: 'Поиск: шаблон Description (EN)',
+          type: 'textarea',
+          defaultValue: 'Found {count} articles for "{query}": news, stories and opinions on {siteName}.',
+          admin: {
+            description: 'Шаблон description для поиска (EN). Доступны: {query}, {count}, {siteName}',
+          },
+        },
+        {
+          name: 'searchDescriptionTemplateRu',
+          label: 'Поиск: шаблон Description (RU)',
+          type: 'textarea',
+          defaultValue: 'Найдено {count} статей по запросу "{query}": новости, истории и мнения на {siteName}.',
+          admin: {
+            description: 'Шаблон description для поиска (RU). Доступны: {query}, {count}, {siteName}',
+          },
+        },
+        {
+          name: 'articleReadMoreEn',
+          label: 'Статья: "Read more on" (EN)',
+          type: 'text',
+          defaultValue: 'Read more on',
+          admin: {
+            description: 'Текст для окончания description статьи (EN). Используется как "... {articleReadMoreEn} {siteName}."',
+          },
+        },
+        {
+          name: 'articleReadMoreRu',
+          label: 'Статья: "Подробности на" (RU)',
+          type: 'text',
+          defaultValue: 'Подробности — на',
+          admin: {
+            description: 'Текст для окончания description статьи (RU). Используется как "... {articleReadMoreRu} {siteName}."',
+          },
+        },
+      ],
+    },
+    {
       name: 'footer',
       label: 'Футер',
       type: 'group',
