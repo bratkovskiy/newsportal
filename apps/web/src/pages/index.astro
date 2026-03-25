@@ -215,6 +215,8 @@ const tags = await fetchTags();
 const displayTags = tags.slice(0, 20);
 const homeCategories = await fetchHomeCategories();
 
+const defaultCategoryLabel = currentLanguage === 'en' ? 'Articles' : 'Статьи';
+
 const latestArticles: HomeArticle[] = articles.map((article) => {
   const { url, alt } = getCoverImage(article);
   const tagName = getPrimaryTagName(article);
@@ -228,7 +230,7 @@ const latestArticles: HomeArticle[] = articles.map((article) => {
     imageUrl: url,
     imageAlt: alt,
     fallbackImageUrl: PLACEHOLDER_IMAGE_URL,
-    category: tagName || categoryName || 'Статьи',
+    category: tagName || categoryName || defaultCategoryLabel,
     authorName: getAuthorName(article),
     publishedDate: article.publishedDate,
     viewCount,
