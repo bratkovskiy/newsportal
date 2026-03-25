@@ -305,7 +305,7 @@ function calcReadingTime(html: string): number {
 }
 const readingTime = calcReadingTime(articleHtml);
 
-// Related articles (from same tag)
+// Related articles (always 4 articles: from same tag, then backfill from other articles)
 let relatedArticles: Array<{
   title: string;
   slug: string;
@@ -314,22 +314,26 @@ let relatedArticles: Array<{
   coverImage?: string;
 }> = [];
 
-if (tag.slug && payloadArticle?.id) {
+if (payloadArticle?.id) {
   try {
-    const relatedUrl = new URL('/api/articles', CMS_URL);
-    relatedUrl.searchParams.set('where[status][equals]', 'published');
-    relatedUrl.searchParams.set('where[tags.slug][equals]', tag.slug);
-    relatedUrl.searchParams.set('limit', '5');
-    relatedUrl.searchParams.set('depth', '1');
-    relatedUrl.searchParams.set('sort', '-publishedDate');
+    const usedIds = new Set<string>([String(payloadArticle.id)]);
+    
+    // Step 1: Try to get articles from the same tag
+    if (tag.slug) {
+      const tagUrl = new URL('/api/articles', CMS_URL);
+      tagUrl.searchParams.set('where[status][equals]', 'published');
+      tagUrl.searchParams.set('where[tags.slug][equals]', tag.slug);
+      tagUrl.searchParams.set('limit', '10');
+      tagUrl.searchParams.set('depth', '1');
+      tagUrl.searchParams.set('sort', '-publishedDate');
 
-    const relatedRes = await fetch(relatedUrl.toString());
-    if (relatedRes.ok) {
-      const { docs } = await relatedRes.json();
-      relatedArticles = (docs as PayloadArticle[])
-        .filter(doc => String(doc.id) !== String(payloadArticle.id))
-        .slice(0, 4)
-        .map(doc => {
+      const tagRes = await fetch(tagUrl.toString());
+      if (tagRes.ok) {
+        const { docs } = await tagRes.json();
+        for (const doc of docs as PayloadArticle[]) {
+          const docId = String(doc.id);
+          if (usedIds.has(docId)) continue;
+          
           let coverImg = '';
           if (doc.feedImageUrl) {
             coverImg = doc.feedImageUrl;
@@ -337,14 +341,58 @@ if (tag.slug && payloadArticle?.id) {
             coverImg = new URL((doc.coverImage as any).url, CMS_URL).toString();
           }
 
-          return {
+          relatedArticles.push({
             title: doc.title ?? '',
             slug: doc.slug ?? '',
             href: buildArticlePath(doc),
             tag: tag.name,
             coverImage: coverImg,
-          };
-        });
+          });
+          usedIds.add(docId);
+          
+          if (relatedArticles.length >= 4) break;
+        }
+      }
+    }
+    
+    // Step 2: Backfill from general articles if we have less than 4
+    if (relatedArticles.length < 4) {
+      const backfillUrl = new URL('/api/articles', CMS_URL);
+      backfillUrl.searchParams.set('where[status][equals]', 'published');
+      backfillUrl.searchParams.set('limit', '20');
+      backfillUrl.searchParams.set('depth', '1');
+      backfillUrl.searchParams.set('sort', '-publishedDate');
+
+      const backfillRes = await fetch(backfillUrl.toString());
+      if (backfillRes.ok) {
+        const { docs } = await backfillRes.json();
+        for (const doc of docs as PayloadArticle[]) {
+          const docId = String(doc.id);
+          if (usedIds.has(docId)) continue;
+          
+          let coverImg = '';
+          if (doc.feedImageUrl) {
+            coverImg = doc.feedImageUrl;
+          } else if (doc.coverImage && typeof doc.coverImage === 'object' && (doc.coverImage as any).url) {
+            coverImg = new URL((doc.coverImage as any).url, CMS_URL).toString();
+          }
+
+          // Get tag name for display
+          const docFirstTag = Array.isArray(doc.tags) && doc.tags.length > 0 ? doc.tags[0] : null;
+          const docTagName = docFirstTag && typeof docFirstTag === 'object' ? docFirstTag.name ?? '' : '';
+
+          relatedArticles.push({
+            title: doc.title ?? '',
+            slug: doc.slug ?? '',
+            href: buildArticlePath(doc),
+            tag: docTagName || (typeof doc.categories?.[0] === 'object' ? doc.categories[0].name ?? '' : ''),
+            coverImage: coverImg,
+          });
+          usedIds.add(docId);
+          
+          if (relatedArticles.length >= 4) break;
+        }
+      }
     }
   } catch (e) {
     console.error('Error fetching related articles:', e);
