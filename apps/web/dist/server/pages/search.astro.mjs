@@ -1,8 +1,8 @@
 /* empty css                                 */
 import { c as createComponent, b as createAstro, m as maybeRenderHead, e as addAttribute, r as renderComponent, a as renderTemplate } from '../chunks/astro/server_CMM1Egp5.mjs';
 import 'kleur/colors';
-import { $ as $$BaseLayout } from '../chunks/BaseLayout_Daea0-QY.mjs';
-import { e as getBrandName, f as generateSearchTitle, h as generateSearchDescription, $ as $$MainColumns } from '../chunks/seo_Dd-zSdmL.mjs';
+import { $ as $$BaseLayout } from '../chunks/BaseLayout_BwCxMai_.mjs';
+import { e as getBrandName, f as generateSearchTitle, h as generateSearchDescription, $ as $$MainColumns } from '../chunks/seo_C7GlaQdg.mjs';
 import '@astrojs/internal-helpers/path';
 import { $ as $$Image } from '../chunks/_astro_assets_B8LqoNoR.mjs';
 export { renderers } from '../renderers.mjs';

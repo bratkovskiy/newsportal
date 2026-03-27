@@ -26,6 +26,7 @@ import * as migration_2025_12_14_01_add_articles_noindex from './2025-12-14-01-a
 import * as migration_2025_12_14_02_add_article_versions_noindex from './2025-12-14-02-add-article-versions-noindex';
 import * as migration_2025_12_15_01_add_seo_texts_to_site_settings from './2025-12-15-01-add-seo-texts-to-site-settings';
 import * as migration_20260319_100737 from './20260319_100737';
+import * as migration_20260327_add_seo_columns_to_site_settings from './20260327_add_seo_columns_to_site_settings';
 
 export const migrations = [
   { up: migration_2025_12_08_01_add_feeds_import_fields.up, down: migration_2025_12_08_01_add_feeds_import_fields.down, name: '2025-12-08-01-add-feeds-import-fields' },
@@ -56,4 +57,5 @@ export const migrations = [
   { up: migration_2025_12_14_02_add_article_versions_noindex.up, down: migration_2025_12_14_02_add_article_versions_noindex.down, name: '2025-12-14-02-add-article-versions-noindex' },
   { up: migration_2025_12_15_01_add_seo_texts_to_site_settings.up, down: migration_2025_12_15_01_add_seo_texts_to_site_settings.down, name: '2025-12-15-01-add-seo-texts-to-site-settings' },
   { up: migration_20260319_100737.up, down: migration_20260319_100737.down, name: '20260319_100737' },
+  { up: migration_20260327_add_seo_columns_to_site_settings.up, down: migration_20260327_add_seo_columns_to_site_settings.down, name: '20260327_add_seo_columns_to_site_settings' },
 ];

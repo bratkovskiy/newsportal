@@ -76,7 +76,11 @@ const onRequest$1 = defineMiddleware(async (context, next) => {
   response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
   response.headers.set("Permissions-Policy", "geolocation=(), camera=(), microphone=(), interest-cohort=()");
   const contentType = response.headers.get("Content-Type");
-  if (contentType && (contentType.includes("text/html") || contentType.includes("application/javascript") || contentType.includes("text/css"))) {
+  if (contentType && contentType.includes("text/html")) {
+    response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+  } else if (contentType && (contentType.includes("application/javascript") || contentType.includes("text/css"))) {
     response.headers.set("Cache-Control", "public, max-age=0, s-maxage=31536000, stale-while-revalidate=60");
   }
   return response;

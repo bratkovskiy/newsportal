@@ -1,8 +1,8 @@
 /* empty css                                    */
 import { c as createComponent, b as createAstro, r as renderComponent, a as renderTemplate, d as renderSlot, m as maybeRenderHead, e as addAttribute, f as defineScriptVars, F as Fragment, u as unescapeHTML } from '../../chunks/astro/server_CMM1Egp5.mjs';
 import 'kleur/colors';
-import { $ as $$BaseLayout } from '../../chunks/BaseLayout_Daea0-QY.mjs';
-import { g as generateArticleTitle, a as generateArticleDescription, $ as $$MainColumns, b as $$AdSlot } from '../../chunks/seo_Dd-zSdmL.mjs';
+import { $ as $$BaseLayout } from '../../chunks/BaseLayout_BwCxMai_.mjs';
+import { g as generateArticleTitle, a as generateArticleDescription, $ as $$MainColumns, b as $$AdSlot } from '../../chunks/seo_C7GlaQdg.mjs';
 /* empty css                                     */
 import 'clsx';
 import { g as getCmsEnv } from '../../chunks/cmsEnv_CFHJDxTC.mjs';
@@ -29,7 +29,7 @@ const $$Article = createComponent(async ($$result, $$props, $$slots) => {
   const formattedDate = new Intl.DateTimeFormat(dateLocale, { dateStyle: "long" }).format(_d);
   const metaTitle = await generateArticleTitle(title);
   const metaDescription = await generateArticleDescription(excerpt);
-  return renderTemplate`${renderComponent($$result, "BaseLayout", $$BaseLayout, { "title": metaTitle, "description": metaDescription }, { "default": async ($$result2) => renderTemplate` ${renderComponent($$result2, "MainColumns", $$MainColumns, {}, { "default": async ($$result3) => renderTemplate` ${maybeRenderHead()}<article class="max-w-4xl mx-auto py-8 lg:py-10"> <div class="mb-6"> ${renderSlot($$result3, $$slots["breadcrumbs"])} </div> <header class="mb-10"> <div class="mb-6"> <h1 class="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-foreground"> ${title} </h1> ${excerpt && renderTemplate`<p class="text-base md:text-lg text-muted mt-4 max-w-2xl"> ${excerpt} </p>`} </div> <div class="flex flex-wrap items-center gap-3 text-xs text-muted"> <span>${typeof author === "object" ? author?.name : author}</span> <span class="w-px h-3 bg-border" aria-hidden="true"></span> <time${addAttribute(publishedDate instanceof Date ? publishedDate.toISOString() : publishedDate, "datetime")}>${formattedDate}</time> </div> <div class="mt-8 rounded-card overflow-hidden shadow-card"> <img${addAttribute(coverImage, "src")}${addAttribute(coverImageAlt, "alt")}${addAttribute(1200, "width")}${addAttribute(600, "height")} fetchpriority="high" class="w-full h-auto object-cover aspect-video"${addAttribute(`this.onerror=null; this.src='${fallbackImageUrl}';`, "onerror")}> </div> ${coverCaption && renderTemplate`<p class="mt-3 text-xs text-muted max-w-2xl"> ${coverCaption} </p>`} </header> <div class="prose prose-lg article-prose max-w-4xl w-full"> ${renderSlot($$result3, $$slots["default"])} <!-- Article content goes here --> </div> ${renderSlot($$result3, $$slots["related"])} <!-- Related articles block --> </article>  `, "right": async ($$result3) => renderTemplate`<div class="space-y-6"> ${renderSlot($$result3, $$slots["right"])} ${renderComponent($$result3, "AdSlot", $$AdSlot, { "placementKey": "article_sidebar" })} </div>` })} ` })} `;
+  return renderTemplate`${renderComponent($$result, "BaseLayout", $$BaseLayout, { "title": metaTitle, "description": metaDescription }, { "default": async ($$result2) => renderTemplate` ${renderComponent($$result2, "MainColumns", $$MainColumns, {}, { "default": async ($$result3) => renderTemplate` ${maybeRenderHead()}<article class="article-page"> <!-- Breadcrumbs --> <div class="article-page__breadcrumbs"> ${renderSlot($$result3, $$slots["breadcrumbs"])} </div> <!-- Header --> <header class="article-page__header"> ${category?.name && renderTemplate`<a${addAttribute(category.slug ? `/tags/${category.slug}` : "#", "href")} class="article-page__cat-tag"> ${category.name} </a>`} <h1 class="article-page__title">${title}</h1> ${excerpt && renderTemplate`<p class="article-page__excerpt">${excerpt}</p>`} <div class="article-page__byline"> ${author?.avatar ? renderTemplate`<img${addAttribute(author.avatar, "src")}${addAttribute(typeof author === "object" ? author.name : author, "alt")}${addAttribute(32, "width")}${addAttribute(32, "height")} class="article-page__avatar" onerror="this.style.display='none'">` : renderTemplate`<div class="article-page__avatar-placeholder"> ${(typeof author === "object" ? author?.name : author)?.charAt(0)?.toUpperCase()} </div>`} <span class="article-page__author">${typeof author === "object" ? author?.name : author}</span> <span class="article-page__byline-sep" aria-hidden="true"></span> <time class="article-page__date"${addAttribute(publishedDate instanceof Date ? publishedDate.toISOString() : publishedDate, "datetime")}> ${formattedDate} </time> </div> ${coverImage && renderTemplate`<figure class="article-page__cover-wrap"> <img${addAttribute(coverImage, "src")}${addAttribute(coverImageAlt, "alt")}${addAttribute(1200, "width")}${addAttribute(630, "height")} fetchpriority="high" class="article-page__cover"${addAttribute(`this.onerror=null;this.src='${fallbackImageUrl}'`, "onerror")}> ${coverCaption && renderTemplate`<figcaption class="article-page__cover-caption">${coverCaption}</figcaption>`} </figure>`} </header> <!-- Body --> <div class="article-prose"> ${renderSlot($$result3, $$slots["default"])} </div> <!-- Related --> ${renderSlot($$result3, $$slots["related"])} </article>  `, "right": async ($$result3) => renderTemplate`<div class="space-y-6"> ${renderSlot($$result3, $$slots["right"])} ${renderComponent($$result3, "AdSlot", $$AdSlot, { "placementKey": "article_sidebar" })} </div>` })} ` })} `;
 }, "/home/ilia/newsportal_clean/apps/web/src/layouts/Article.astro", void 0);
 
 const $$ArticleBody = createComponent(($$result, $$props, $$slots) => {
@@ -45,6 +45,27 @@ const $$ = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$;
   const { cmsUrl: CMS_URL, publicCmsUrl: PUBLIC_CMS_URL, placeholderImageUrl: PLACEHOLDER_IMAGE_URL } = getCmsEnv();
+  let siteSettings = null;
+  try {
+    const res = await fetch(new URL("/api/globals/site-settings", CMS_URL).toString());
+    if (res.ok) {
+      siteSettings = await res.json();
+    }
+  } catch (error) {
+    console.error("Failed to fetch site settings:", error);
+  }
+  const currentLanguage = siteSettings?.currentLanguage === "en" ? "en" : "ru";
+  const breadcrumbsHomeLabel = currentLanguage === "en" ? "Home" : "\u0413\u043B\u0430\u0432\u043D\u0430\u044F";
+  const defaultAuthorName = currentLanguage === "en" ? "Unknown" : "\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u043E";
+  const notFoundText = currentLanguage === "en" ? "Article not found." : "\u0421\u0442\u0430\u0442\u044C\u044F \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.";
+  function buildArticlePath(article) {
+    const slug = article.slug ?? "";
+    const id = article.id ? String(article.id) : "";
+    if (slug && id) return `/article/${slug}-${id}.html`;
+    if (slug) return `/article/${slug}`;
+    if (id) return `/article/${id}`;
+    return "/";
+  }
   function parseArticlePath(slugPath) {
     const segments = slugPath.split("/").filter(Boolean);
     if (!segments.length) return { id: null, slug: null };
@@ -109,9 +130,11 @@ const $$ = createComponent(async ($$result, $$props, $$slots) => {
   const publishedDate = _rawDate && !isNaN(new Date(_rawDate).getTime()) ? new Date(_rawDate) : /* @__PURE__ */ new Date();
   const firstCategory = Array.isArray(payloadArticle?.categories) && payloadArticle.categories.length > 0 ? payloadArticle.categories[0] : null;
   const category = firstCategory && typeof firstCategory === "object" ? { name: firstCategory.name ?? "", slug: firstCategory.slug ?? "" } : { name: "", slug: "" };
+  const firstTag = Array.isArray(payloadArticle?.tags) && payloadArticle.tags.length > 0 ? payloadArticle.tags[0] : null;
+  const tag = firstTag && typeof firstTag === "object" ? { name: firstTag.name ?? "", slug: firstTag.slug ?? "" } : { name: "", slug: "" };
   const authorObj = payloadArticle?.author && typeof payloadArticle.author === "object" ? payloadArticle.author : null;
   const author = {
-    name: authorObj?.name ?? "Unknown",
+    name: authorObj?.name ?? defaultAuthorName,
     slug: authorObj?.slug ?? "unknown",
     avatar: authorObj?.avatar && typeof authorObj.avatar === "object" ? new URL(authorObj.avatar.url, CMS_URL).toString() : void 0
   };
@@ -222,31 +245,71 @@ const $$ = createComponent(async ($$result, $$props, $$slots) => {
   }
   calcReadingTime(articleHtml);
   let relatedArticles = [];
-  if (category.slug && payloadArticle?.id) {
+  if (payloadArticle?.id) {
     try {
-      const relatedUrl = new URL("/api/articles", CMS_URL);
-      relatedUrl.searchParams.set("where[status][equals]", "published");
-      relatedUrl.searchParams.set("where[categories.slug][equals]", category.slug);
-      relatedUrl.searchParams.set("limit", "5");
-      relatedUrl.searchParams.set("depth", "1");
-      relatedUrl.searchParams.set("sort", "-publishedDate");
-      const relatedRes = await fetch(relatedUrl.toString());
-      if (relatedRes.ok) {
-        const { docs } = await relatedRes.json();
-        relatedArticles = docs.filter((doc) => String(doc.id) !== String(payloadArticle.id)).slice(0, 4).map((doc) => {
-          let coverImg = "";
-          if (doc.feedImageUrl) {
-            coverImg = doc.feedImageUrl;
-          } else if (doc.coverImage && typeof doc.coverImage === "object" && doc.coverImage.url) {
-            coverImg = new URL(doc.coverImage.url, CMS_URL).toString();
+      const usedIds = /* @__PURE__ */ new Set([String(payloadArticle.id)]);
+      if (tag.slug) {
+        const tagUrl = new URL("/api/articles", CMS_URL);
+        tagUrl.searchParams.set("where[status][equals]", "published");
+        tagUrl.searchParams.set("where[tags.slug][equals]", tag.slug);
+        tagUrl.searchParams.set("limit", "10");
+        tagUrl.searchParams.set("depth", "1");
+        tagUrl.searchParams.set("sort", "-publishedDate");
+        const tagRes = await fetch(tagUrl.toString());
+        if (tagRes.ok) {
+          const { docs } = await tagRes.json();
+          for (const doc of docs) {
+            const docId = String(doc.id);
+            if (usedIds.has(docId)) continue;
+            let coverImg = "";
+            if (doc.feedImageUrl) {
+              coverImg = doc.feedImageUrl;
+            } else if (doc.coverImage && typeof doc.coverImage === "object" && doc.coverImage.url) {
+              coverImg = new URL(doc.coverImage.url, CMS_URL).toString();
+            }
+            relatedArticles.push({
+              title: doc.title ?? "",
+              slug: doc.slug ?? "",
+              href: buildArticlePath(doc),
+              tag: tag.name,
+              coverImage: coverImg
+            });
+            usedIds.add(docId);
+            if (relatedArticles.length >= 4) break;
           }
-          return {
-            title: doc.title ?? "",
-            slug: doc.slug ?? "",
-            category: category.name,
-            coverImage: coverImg
-          };
-        });
+        }
+      }
+      if (relatedArticles.length < 4) {
+        const backfillUrl = new URL("/api/articles", CMS_URL);
+        backfillUrl.searchParams.set("where[status][equals]", "published");
+        backfillUrl.searchParams.set("limit", "20");
+        backfillUrl.searchParams.set("depth", "1");
+        backfillUrl.searchParams.set("sort", "-publishedDate");
+        const backfillRes = await fetch(backfillUrl.toString());
+        if (backfillRes.ok) {
+          const { docs } = await backfillRes.json();
+          for (const doc of docs) {
+            const docId = String(doc.id);
+            if (usedIds.has(docId)) continue;
+            let coverImg = "";
+            if (doc.feedImageUrl) {
+              coverImg = doc.feedImageUrl;
+            } else if (doc.coverImage && typeof doc.coverImage === "object" && doc.coverImage.url) {
+              coverImg = new URL(doc.coverImage.url, CMS_URL).toString();
+            }
+            const docFirstTag = Array.isArray(doc.tags) && doc.tags.length > 0 ? doc.tags[0] : null;
+            const docTagName = docFirstTag && typeof docFirstTag === "object" ? docFirstTag.name ?? "" : "";
+            relatedArticles.push({
+              title: doc.title ?? "",
+              slug: doc.slug ?? "",
+              href: buildArticlePath(doc),
+              tag: docTagName || (typeof doc.categories?.[0] === "object" ? doc.categories[0].name ?? "" : ""),
+              coverImage: coverImg
+            });
+            usedIds.add(docId);
+            if (relatedArticles.length >= 4) break;
+          }
+        }
       }
     } catch (e) {
       console.error("Error fetching related articles:", e);
@@ -254,7 +317,7 @@ const $$ = createComponent(async ($$result, $$props, $$slots) => {
   }
   const metaTitle = payloadArticle?.title ?? "";
   const metaDescription = payloadArticle?.excerpt ?? "";
-  return renderTemplate`${payloadArticle ? renderTemplate`${renderComponent($$result, "ArticleLayout", $$Article, { "title": metaTitle, "excerpt": metaDescription, "category": category, "author": author, "publishedDate": publishedDate instanceof Date ? publishedDate.toISOString() : publishedDate, "coverImage": coverImageUrl, "coverImageAlt": coverImageAlt, "fallbackImageUrl": PLACEHOLDER_IMAGE_URL }, { "breadcrumbs": async ($$result2) => renderTemplate`${maybeRenderHead()}<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Главная</a><span aria-hidden="true">/</span>${category.slug ? renderTemplate`<a${addAttribute(`/category/${category.slug}`, "href")}>${category.name}</a>` : renderTemplate`<span>${category.name}</span>`}<span aria-hidden="true">/</span><span class="breadcrumb-current">${metaTitle}</span></nav>`, "default": async ($$result2) => renderTemplate(_a || (_a = __template(["", "<script>(function(){", "\n      (function() {\n        if (!articleId || !publicCmsUrl) return;\n        \n        fetch(publicCmsUrl + '/api/articles/' + articleId + '/increment-view', {\n          method: 'POST',\n          headers: { 'Content-Type': 'application/json' }\n        }).catch(function(err) {\n          console.error('Failed to increment view count:', err);\n        });\n      })();\n    })();<\/script>"])), renderComponent($$result2, "ArticleBody", $$ArticleBody, {}, { "default": async ($$result3) => renderTemplate`${renderComponent($$result3, "Fragment", Fragment, {}, { "default": async ($$result4) => renderTemplate`${unescapeHTML(articleHtml)}` })}` }), defineScriptVars({ articleId: payloadArticle?.id, publicCmsUrl: PUBLIC_CMS_URL })) })}` : renderTemplate`<p style="padding: 2rem; text-align: center;">Article not found.</p>`}`;
+  return renderTemplate`${payloadArticle ? renderTemplate`${renderComponent($$result, "ArticleLayout", $$Article, { "title": metaTitle, "excerpt": metaDescription, "category": tag.slug ? tag : category, "author": author, "publishedDate": publishedDate instanceof Date ? publishedDate.toISOString() : publishedDate, "coverImage": coverImageUrl, "coverImageAlt": coverImageAlt, "fallbackImageUrl": PLACEHOLDER_IMAGE_URL }, { "breadcrumbs": async ($$result2) => renderTemplate`${maybeRenderHead()}<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">${breadcrumbsHomeLabel}</a><span aria-hidden="true">/</span>${category.slug ? renderTemplate`<a${addAttribute(`/categories/${category.slug}`, "href")}>${category.name}</a>` : renderTemplate`<span>${category.name}</span>`}<span aria-hidden="true">/</span><span class="breadcrumb-current">${metaTitle}</span></nav>`, "default": async ($$result2) => renderTemplate(_a || (_a = __template(["", "<script>(function(){", "\n      (function() {\n        if (!articleId || !publicCmsUrl) return;\n        \n        fetch(publicCmsUrl + '/api/articles/' + articleId + '/increment-view', {\n          method: 'POST',\n          headers: { 'Content-Type': 'application/json' }\n        }).catch(function(err) {\n          console.error('Failed to increment view count:', err);\n        });\n      })();\n    })();<\/script>"])), renderComponent($$result2, "ArticleBody", $$ArticleBody, {}, { "default": async ($$result3) => renderTemplate`${renderComponent($$result3, "Fragment", Fragment, {}, { "default": async ($$result4) => renderTemplate`${unescapeHTML(articleHtml)}` })}` }), defineScriptVars({ articleId: payloadArticle?.id, publicCmsUrl: PUBLIC_CMS_URL })), "related": async ($$result2) => renderTemplate`${relatedArticles.length > 0 && renderTemplate`<div class="art-related"><div class="art-related__header"><span class="art-related__label">Related articles</span><span class="art-related__line"></span></div><div class="art-related__grid">${relatedArticles.map((rel) => renderTemplate`<a${addAttribute(rel.href, "href")} class="art-related__item">${rel.coverImage && renderTemplate`<div class="art-related__img-wrap"><img${addAttribute(rel.coverImage, "src")}${addAttribute(rel.title, "alt")}${addAttribute(280, "width")}${addAttribute(160, "height")} loading="lazy" class="art-related__img"></div>`}<div class="art-related__body">${rel.tag && renderTemplate`<span class="art-related__cat">${rel.tag}</span>`}<h3 class="art-related__title">${rel.title}</h3></div></a>`)}</div></div>`}` })}` : renderTemplate`<p style="padding: 2rem; text-align: center;">${notFoundText}</p>`}`;
 }, "/home/ilia/newsportal_clean/apps/web/src/pages/article/[...slug].astro", void 0);
 
 const $$file = "/home/ilia/newsportal_clean/apps/web/src/pages/article/[...slug].astro";

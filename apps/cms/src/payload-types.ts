@@ -889,6 +889,26 @@ export interface SiteSetting {
     articleAlsoOnTopicRu?: string | null;
     articleAlsoOnTopicEn?: string | null;
   };
+  seo?: {
+    homeTitleEn?: string | null;
+    homeTitleRu?: string | null;
+    homeDescriptionEn?: string | null;
+    homeDescriptionRu?: string | null;
+    categoryTitleSuffixEn?: string | null;
+    categoryTitleSuffixRu?: string | null;
+    categoryDescriptionTemplateEn?: string | null;
+    categoryDescriptionTemplateRu?: string | null;
+    tagTitleSuffixEn?: string | null;
+    tagTitleSuffixRu?: string | null;
+    tagDescriptionTemplateEn?: string | null;
+    tagDescriptionTemplateRu?: string | null;
+    searchTitleTemplateEn?: string | null;
+    searchTitleTemplateRu?: string | null;
+    searchDescriptionTemplateEn?: string | null;
+    searchDescriptionTemplateRu?: string | null;
+    articleReadMoreEn?: string | null;
+    articleReadMoreRu?: string | null;
+  };
   footer?: {
     textRu?: string | null;
     textEn?: string | null;

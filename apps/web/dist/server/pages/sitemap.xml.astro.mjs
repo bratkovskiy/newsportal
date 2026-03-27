@@ -1,11 +1,10 @@
+import { g as getSiteUrl } from '../chunks/siteUrl_CyUCBcWv.mjs';
 export { renderers } from '../renderers.mjs';
 
 const __vite_import_meta_env__ = {"ASSETS_PREFIX": undefined, "BASE_URL": "/", "DEV": false, "MODE": "production", "PROD": true, "PUBLIC_CMS_URL": "http://localhost:3000", "PUBLIC_PLACEHOLDER_URL": "http://localhost:3000/api/media/file/placeholder-1.jpg", "SITE": undefined, "SSR": true};
-const env = Object.assign(__vite_import_meta_env__, { CMS_URL: "http://cms:3000", SITE: "http://localhost:4321", _: process.env._ }) || {};
-const site = env.PUBLIC_SITE_URL || env.SITE || "http://localhost:4321";
-const CMS_URL = env.CMS_URL || "http://cms:3000";
+const CMS_URL = (Object.assign(__vite_import_meta_env__, { CMS_URL: "http://cms:3000", SITE: "http://localhost:4321", _: process.env._ }) || {}).CMS_URL || "http://cms:3000";
 const SITEMAP_LIMIT = 5e4;
-const generateSitemap = (pageEntries) => {
+const generateSitemap = (pageEntries, site) => {
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${pageEntries.map(
@@ -17,7 +16,7 @@ ${pageEntries.map(
 </urlset>`;
   return sitemap;
 };
-const generateSitemapIndex = (chunks) => {
+const generateSitemapIndex = (chunks, site) => {
   const now = /* @__PURE__ */ new Date();
   const indexXml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -72,6 +71,7 @@ function buildArticlePath(article) {
   return "";
 }
 const GET = async ({ request }) => {
+  const site = getSiteUrl(request);
   const entries = [];
   const now = /* @__PURE__ */ new Date();
   addEntry(entries, "/");
@@ -127,7 +127,7 @@ const GET = async ({ request }) => {
   }
   const total = entries.length;
   if (total === 0) {
-    const fallback = generateSitemap([{ url: "/", lastmod: /* @__PURE__ */ new Date() }]);
+    const fallback = generateSitemap([{ url: "/", lastmod: /* @__PURE__ */ new Date() }], site);
     return new Response(fallback, {
       headers: {
         "Content-Type": "application/xml"
@@ -140,7 +140,7 @@ const GET = async ({ request }) => {
   const page = pageParam ? Number(pageParam) : NaN;
   if (!pageParam || !Number.isFinite(page) || page < 1 || page > totalPages) {
     if (totalPages === 1) {
-      const sitemapContent2 = generateSitemap(entries);
+      const sitemapContent2 = generateSitemap(entries, site);
       return new Response(sitemapContent2, {
         headers: {
           "Content-Type": "application/xml"
@@ -153,7 +153,7 @@ const GET = async ({ request }) => {
       const end2 = start2 + SITEMAP_LIMIT;
       chunks.push(entries.slice(start2, end2));
     }
-    const indexContent = generateSitemapIndex(chunks);
+    const indexContent = generateSitemapIndex(chunks, site);
     return new Response(indexContent, {
       headers: {
         "Content-Type": "application/xml"
@@ -163,7 +163,7 @@ const GET = async ({ request }) => {
   const start = (page - 1) * SITEMAP_LIMIT;
   const end = start + SITEMAP_LIMIT;
   const pageEntries = entries.slice(start, end);
-  const sitemapContent = generateSitemap(pageEntries);
+  const sitemapContent = generateSitemap(pageEntries, site);
   return new Response(sitemapContent, {
     headers: {
       "Content-Type": "application/xml"

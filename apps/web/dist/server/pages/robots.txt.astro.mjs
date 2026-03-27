@@ -1,12 +1,13 @@
+import { g as getSiteUrl } from '../chunks/siteUrl_CyUCBcWv.mjs';
 export { renderers } from '../renderers.mjs';
 
-const site = "http://localhost:4321";
 const CMS_URL = "http://cms:3000";
-async function getRobotsContent() {
+async function getRobotsContent(siteUrl) {
+  const sitemapLine = `Sitemap: ${new URL("sitemap.xml", siteUrl).href}`;
   const defaultContent = `User-agent: *
 Allow: /
 
-Sitemap: ${new URL("sitemap.xml", site).href}`;
+${sitemapLine}`;
   try {
     const res = await fetch(`${CMS_URL}/api/globals/robots`);
     if (!res.ok) {
@@ -15,15 +16,22 @@ Sitemap: ${new URL("sitemap.xml", site).href}`;
     const data = await res.json();
     const content = data?.content;
     if (typeof content === "string" && content.trim().length > 0) {
-      return content;
+      const fixed = content.replace(/Sitemap:\s*https?:\/\/localhost[^\n]*/gi, sitemapLine);
+      if (!/^sitemap:/im.test(fixed)) {
+        return `${fixed.trimEnd()}
+
+${sitemapLine}`;
+      }
+      return fixed;
     }
     return defaultContent;
   } catch (e) {
     return defaultContent;
   }
 }
-const GET = async () => {
-  const robotsTxt = await getRobotsContent();
+const GET = async ({ request }) => {
+  const siteUrl = getSiteUrl(request);
+  const robotsTxt = await getRobotsContent(siteUrl);
   return new Response(robotsTxt, {
     headers: {
       "Content-Type": "text/plain; charset=utf-8"
