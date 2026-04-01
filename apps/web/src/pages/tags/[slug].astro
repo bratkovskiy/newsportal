@@ -112,13 +112,14 @@ try {
         }
       }
       
-      const articleSlug = article.slug || article.title?.toLowerCase().replace(/\s+/g, '-');
-      const publishedDate = article.publishedDate ? new Date(article.publishedDate) : new Date();
-      const year = publishedDate.getFullYear();
-      const month = String(publishedDate.getMonth() + 1).padStart(2, '0');
+      const articleSlug = article.slug || '';
+      const articleId = article.id != null ? String(article.id) : '';
+      const href = articleSlug && articleId
+        ? `/article/${articleSlug}-${articleId}.html`
+        : articleSlug ? `/article/${articleSlug}` : articleId ? `/article/${articleId}` : '/';
       
       return {
-        href: `/article/${year}/${month}/${articleSlug}`,
+        href,
         title: article.title,
         excerpt: article.excerpt || '',
         imageUrl,
