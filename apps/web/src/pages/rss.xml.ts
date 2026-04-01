@@ -21,7 +21,7 @@ type ArticlesResponse = {
 
 async function fetchArticles(): Promise<PayloadArticle[]> {
   try {
-    const url = `${CMS_URL}/api/articles?where[_status][equals]=published&depth=1&sort=-publishedDate&page=1&limit=${FEED_LIMIT}`;
+    const url = `${CMS_URL}/api/articles?where[status][equals]=published&depth=1&sort=-publishedDate&page=1&limit=${FEED_LIMIT}`;
     const res = await fetch(url);
     if (!res.ok) {
       console.error('Failed to fetch articles for RSS:', res.status);
