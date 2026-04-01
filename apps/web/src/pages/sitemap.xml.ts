@@ -91,9 +91,8 @@ async function fetchPaginatedDocs(path: string, baseParams: Record<string, strin
 
 function buildArticlePath(article: any): string {
   const slug = article?.slug ? String(article.slug) : '';
-  const id = article?.id != null ? String(article.id) : '';
-  if (slug && id) return `/article/${slug}-${id}.html`;
   if (slug) return `/article/${slug}`;
+  const id = article?.id != null ? String(article.id) : '';
   if (id) return `/article/${id}`;
   return '';
 }

@@ -94,9 +94,8 @@ async function fetchTags(): Promise<TagItem[]> {
 
 function buildArticlePath(article: PayloadArticle): string {
   const slug = article.slug ?? '';
-  const id = article.id ? String(article.id) : '';
-  if (slug && id) return `/article/${slug}-${id}.html`;
   if (slug) return `/article/${slug}`;
+  const id = article.id ? String(article.id) : '';
   if (id) return `/article/${id}`;
   return '/';
 }
@@ -1074,9 +1073,8 @@ const metaDescription = await generateHomeDescription(articleCount, brandName);
 
     function buildArticlePath(doc) {
       var slug = doc.slug || '';
-      var id = doc.id != null ? String(doc.id) : '';
-      if (slug && id) return '/article/' + slug + '-' + id + '.html';
       if (slug) return '/article/' + slug;
+      var id = doc.id != null ? String(doc.id) : '';
       if (id) return '/article/' + id;
       return '/';
     }

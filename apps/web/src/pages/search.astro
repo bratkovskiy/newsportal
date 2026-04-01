@@ -43,9 +43,9 @@ if (query.length >= 2) {
       const docs: any[] = Array.isArray(data?.docs) ? data.docs : [];
 
       searchResults = docs.map((doc) => {
-        const slug = doc.slug || String(doc.id);
+        const slug = doc.slug || '';
         const id = String(doc.id);
-        const href = slug && id ? `/article/${slug}-${id}.html` : slug ? `/article/${slug}` : `/article/${id}`;
+        const href = slug ? `/article/${slug}` : `/article/${id}`;
 
         return {
           href,

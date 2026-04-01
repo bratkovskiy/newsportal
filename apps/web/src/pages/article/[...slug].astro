@@ -47,9 +47,8 @@ type PayloadArticle = {
 
 function buildArticlePath(article: PayloadArticle): string {
   const slug = article.slug ?? '';
-  const id = article.id ? String(article.id) : '';
-  if (slug && id) return `/article/${slug}-${id}.html`;
   if (slug) return `/article/${slug}`;
+  const id = article.id ? String(article.id) : '';
   if (id) return `/article/${id}`;
   return '/';
 }
@@ -146,7 +145,7 @@ const slugParam = Array.isArray(Astro.params.slug)
 
 const payloadArticle = await fetchArticleByPath(slugParam);
 
-// Redirect old-format URLs to canonical slug-id.html
+// Redirect old-format URLs (e.g. slug-id.html) to canonical /article/slug
 if (payloadArticle) {
   const canonicalPath = buildArticlePath(payloadArticle);
   const currentPath = `/article/${slugParam}`;
