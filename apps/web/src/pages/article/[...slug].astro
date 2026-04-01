@@ -59,30 +59,46 @@ function parseArticlePath(slugPath: string): { id: number | null; slug: string |
   if (!segments.length) return { id: null, slug: null };
 
   const lastSegment = segments[segments.length - 1];
-  const withoutExt = lastSegment.endsWith('.html')
-    ? lastSegment.slice(0, -'.html'.length)
-    : lastSegment;
 
-  const lastDash = withoutExt.lastIndexOf('-');
-  if (lastDash === -1) {
+  // New canonical format: slug-id.html — only extract ID from .html URLs
+  if (lastSegment.endsWith('.html')) {
+    const withoutExt = lastSegment.slice(0, -'.html'.length);
+    const lastDash = withoutExt.lastIndexOf('-');
+    if (lastDash !== -1) {
+      const idPart = withoutExt.slice(lastDash + 1);
+      const slugPart = withoutExt.slice(0, lastDash);
+      const idNum = Number(idPart);
+      if (idPart && !Number.isNaN(idNum)) {
+        return { id: idNum, slug: slugPart || null };
+      }
+    }
+    // .html but no valid ID — treat as plain slug
     return { id: null, slug: withoutExt || null };
   }
 
-  const idPart = withoutExt.slice(lastDash + 1);
-  const slugPart = withoutExt.slice(0, lastDash);
-  const idNum = Number(idPart);
+  // Old format (year/month/slug) or plain slug — no ID extraction
+  // The last segment is the full slug, don't try to split on dashes
+  return { id: null, slug: lastSegment || null };
+}
 
-  if (!idPart || Number.isNaN(idNum)) {
-    return { id: null, slug: withoutExt || null };
-  }
-
-  return { id: idNum, slug: slugPart || null };
+async function fetchBySlug(slug: string): Promise<PayloadArticle | null> {
+  if (!slug) return null;
+  const url = new URL('/api/articles', CMS_URL);
+  url.searchParams.set('where[slug][equals]', slug);
+  url.searchParams.set('depth', '1');
+  url.searchParams.set('limit', '1');
+  const res = await fetch(url.toString());
+  if (!res.ok) return null;
+  const data = await res.json();
+  const docs = Array.isArray(data?.docs) ? data.docs : [];
+  return docs[0] ?? null;
 }
 
 async function fetchArticleByPath(slugPath: string): Promise<PayloadArticle | null> {
   try {
     const { id, slug } = parseArticlePath(slugPath);
 
+    // Strategy 1: fetch by numeric ID (from slug-id.html format)
     if (id !== null) {
       try {
         const urlById = new URL(`/api/articles/${id}`, CMS_URL);
@@ -90,38 +106,35 @@ async function fetchArticleByPath(slugPath: string): Promise<PayloadArticle | nu
         const resById = await fetch(urlById.toString());
         if (resById.ok) {
           const doc: any = await resById.json();
-          if (!doc) return null;
-          if ((doc as any)._status && (doc as any)._status !== 'published') {
-            return null;
+          if (doc) {
+            const status = (doc as any)._status ?? (doc as any).status;
+            if (!status || status === 'published') {
+              return doc as PayloadArticle;
+            }
           }
-          if (!(doc as any)._status && (doc as any).status && (doc as any).status !== 'published') {
-            return null;
-          }
-          return doc as PayloadArticle;
         }
       } catch {
         // fallback to slug search
       }
     }
 
-    const fallbackSlug = slug
-      ?? slugPath.split('/').filter(Boolean).slice(-1)[0]
-      ?? '';
+    // Strategy 2: search by parsed slug
+    if (slug) {
+      const bySlug = await fetchBySlug(slug);
+      if (bySlug) return bySlug;
+    }
 
-    if (!fallbackSlug) return null;
+    // Strategy 3: try the raw last path segment as slug (handles edge cases)
+    const rawLastSegment = slugPath.split('/').filter(Boolean).slice(-1)[0] ?? '';
+    const cleanSegment = rawLastSegment.endsWith('.html')
+      ? rawLastSegment.slice(0, -'.html'.length)
+      : rawLastSegment;
+    if (cleanSegment && cleanSegment !== slug) {
+      const byRaw = await fetchBySlug(cleanSegment);
+      if (byRaw) return byRaw;
+    }
 
-    const url = new URL('/api/articles', CMS_URL);
-    url.searchParams.set('where[status][equals]', 'published');
-    url.searchParams.set('where[slug][equals]', fallbackSlug);
-    url.searchParams.set('depth', '1');
-    url.searchParams.set('limit', '1');
-
-    const res = await fetch(url.toString());
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    const docs = Array.isArray(data?.docs) ? data.docs : [];
-    return docs[0] ?? null;
+    return null;
   } catch {
     return null;
   }
@@ -132,6 +145,15 @@ const slugParam = Array.isArray(Astro.params.slug)
   : Astro.params.slug ?? '';
 
 const payloadArticle = await fetchArticleByPath(slugParam);
+
+// Redirect old-format URLs to canonical slug-id.html
+if (payloadArticle) {
+  const canonicalPath = buildArticlePath(payloadArticle);
+  const currentPath = `/article/${slugParam}`;
+  if (canonicalPath !== currentPath && canonicalPath !== '/') {
+    return Astro.redirect(canonicalPath, 301);
+  }
+}
 
 if (!payloadArticle) {
   Astro.response.status = 404;
